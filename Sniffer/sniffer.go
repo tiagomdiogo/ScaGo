@@ -37,5 +37,6 @@ func PrintPackets(handle *pcap.Handle) error {
 		fmt.Println(packet)
 	}
 
+	
 	return nil
 }
