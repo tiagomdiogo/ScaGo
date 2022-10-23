@@ -1,29 +1,43 @@
 package main
 
-import(
+import (
+	"bufio"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 
-	"ping.go/sniffer"
+	sniffer "ping.go/Sniffer"
 )
 
-func main(){
+func execFunc(cmd string) {
+	cmdString := strings.TrimSuffix(cmd, "\n")
+	arrCmd := strings.Fields(cmdString)
+
+	switch arrCmd[0] {
+	case "sniffer":
+		interface_name := arrCmd[1]
+		sniffer.CapturePacket(interface_name)
+	case "send":
+	}
+}
+
+func main() {
 
 	fmt.Println("Welcome to Go Sniffer. To get help in usage please use the -help argument.")
-	args := os.Args[1:]
 
-	if len(args) != 0{
-		if args[0] == "-help"{
-			fmt.Println("Usage:\n go run main.go -i <interface_name> -o <Outputfile> -f <Filters>\n\nNote that -o and -f flags are optional.")
+	//Creating a simple shell to read commands
+
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Print("$ ")
+		cmd, err := reader.ReadString('\n')
+		if err != nil {
+			log.Fatal(err)
+			return
 		}
-		if args[0] == "-i"{
-			interface_name := args[1]
-			sniffer.CapturePacket(interface_name)
-		}
+		execFunc(cmd)
 	}
 
-	//interface_name := args[1]
-	//var output_file String
-	
-	
 }
