@@ -1,135 +1,231 @@
-package main
+package packet
 
 import (
-	"errors"
 	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"main.go/utils"
 )
 
-// createCustomPacket creates a custom packet with the given layers and custom fields.
-// It supports TCP, IP, UDP, DNS, Ethernet, and VLAN protocols.
-func createCustomPacket(layersList []gopacket.SerializableLayer, customFields map[string]interface{}) ([]byte, error) {
-	// Create a new buffer to store the packet data
-	buf := gopacket.NewSerializeBuffer()
-
-	// Initialize the layer variables
-	var (
-		ethLayer  *layers.Ethernet
-		vlanLayer *layers.Dot1Q
-		ipLayer   *layers.IPv4
-		udpLayer  *layers.UDP
-		tcpLayer  *layers.TCP
-		dnsLayer  *layers.DNS
-	)
-
-	// Iterate over the layers and add them to the packet
-	for _, l := range layersList {
-		switch layer := l.(type) {
-		case *layers.Ethernet:
-			ethLayer = layer
-		case *layers.Dot1Q:
-			vlanLayer = layer
-		case *layers.IPv4:
-			ipLayer = layer
-		case *layers.UDP:
-			udpLayer = layer
-		case *layers.TCP:
-			tcpLayer = layer
-		case *layers.DNS:
-			dnsLayer = layer
-		default:
-			return nil, fmt.Errorf("unsupported layer type: %T", l)
-		}
-	}
-
-	// Add custom fields to the layers
-	if ethLayer != nil {
-		if customFields["SrcMAC"] != nil {
-			mac, err := net.ParseMAC(customFields["SrcMAC"].(string))
-			if err != nil {
-				return nil, fmt.Errorf("invalid MAC address: %v", customFields["SrcMAC"])
-			}
-			ethLayer.SrcMAC = mac
-		}
-		if customFields["DstMAC"] != nil {
-			mac, err := net.ParseMAC(customFields["DstMAC"].(string))
-			if err != nil {
-				return nil, fmt.Errorf("invalid MAC address: %v", customFields["DstMAC"])
-			}
-			ethLayer.DstMAC = mac
-		}
-	}
-	if ipLayer != nil {
-		if customFields["SrcIP"] != nil {
-			ip := net.ParseIP(customFields["SrcIP"].(string))
-			if ip == nil {
-				return nil, fmt.Errorf("invalid IP address: %v", customFields["SrcIP"])
-			}
-			ipLayer.SrcIP = ip
-		}
-		if customFields["DstIP"] != nil {
-			ip := net.ParseIP(customFields["DstIP"].(string))
-			if ip == nil {
-				return nil, fmt.Errorf("invalid IP address: %v", customFields["DstIP"])
-			}
-			ipLayer.DstIP = ip
-		}
-	}
-	if tcpLayer != nil {
-		if customFields["SrcPort"] != nil {
-			port := customFields["SrcPort"].(uint16)
-			tcpLayer.SrcPort = layers.TCPPort(port)
-		}
-		if customFields["DstPort"] != nil {
-			port := customFields["DstPort"].(uint16)
-			tcpLayer.DstPort = layers.TCPPort(port)
-		}
-	}
-	if udpLayer != nil {
-		if customFields["SrcPort"] != nil {
-			port := customFields["SrcPort"].(uint16)
-			udpLayer.SrcPort = layers.UDPPort(port)
-		}
-		if customFields["DstPort"] != nil {
-			port := customFields["DstPort"].(uint16)
-			udpLayer.DstPort = layers.UDPPort(port)
-		}
-	}
-	if dnsLayer != nil {
-		if customFields["ID"] != nil {
-			id := customFields["ID"].(uint16)
-			dnsLayer.ID = id
-		}
-		if customFields["OpCode"] != nil {
-			opcode := customFields["OpCode"].(layers.DNSOpCode)
-			dnsLayer.OpCode = opcode
-		}
-	}
-
-	// Serialize the packet layers into the buffer
-	var options gopacket.SerializeOptions
-	if vlanLayer != nil {
-		options.FixLengths = true
-	}
-	err := gopacket.SerializeLayers(buf, options,
-		ethLayer,
-		vlanLayer,
-		ipLayer,
-		udpLayer,
-		tcpLayer,
-		dnsLayer,
-	)
+func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string) ([]byte, error) {
+	srcIP, err := utils.ParseIPGen(srcIPStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize layers: %v", err)
+		return nil, err
+	}
+	dstIP, err := utils.ParseIPGen(dstIPStr)
+	if err != nil {
+		return nil, err
+	}
+	srcMAC, err := utils.ParseMACGen(srcMACStr)
+	if err != nil {
+		return nil, err
+	}
+	dstMAC, err := utils.ParseMACGen(dstMACStr)
+	if err != nil {
+		return nil, err
 	}
 
-	// Return the packet data
-	packetData := buf.Bytes()
-	if len(packetData) == 0 {
-		return nil, errors.New("packet is empty")
+	arpLayer := &layers.ARP{
+		AddrType:          layers.LinkTypeEthernet,
+		Protocol:          layers.EthernetTypeIPv4,
+		HwAddressSize:     6,
+		ProtAddressSize:   4,
+		Operation:         layers.ARPRequest,
+		SourceHwAddress:   srcMAC,
+		SourceProtAddress: srcIP.To4(),
+		DstHwAddress:      dstMAC,
+		DstProtAddress:    dstIP.To4(),
 	}
-	return packetData, nil
+
+	buffer := gopacket.NewSerializeBuffer()
+	serializeOptions := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
+	}
+
+	err = gopacket.SerializeLayers(buffer, serializeOptions, arpLayer)
+	if err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
+}
+
+func CraftIPPacket(srcIPStr, dstIPStr, protocol string) (*layers.IPv4, error) {
+	srcIP := net.ParseIP(srcIPStr)
+	dstIP := net.ParseIP(dstIPStr)
+
+	var ipProtocol layers.IPProtocol
+	switch protocol {
+	case "TCP":
+		ipProtocol = layers.IPProtocolTCP
+	case "UDP":
+		ipProtocol = layers.IPProtocolUDP
+	default:
+		return nil, fmt.Errorf("unsupported protocol: %s", protocol)
+	}
+
+	ipLayer := &layers.IPv4{
+		SrcIP:    srcIP,
+		DstIP:    dstIP,
+		Version:  4,
+		TTL:      64,
+		Protocol: ipProtocol,
+	}
+
+	return ipLayer, nil
+}
+
+func CraftTCPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr string) ([]byte, error) {
+	srcPortUint, err := strconv.ParseUint(srcPortStr, 10, 16)
+	if err != nil {
+		return nil, err
+	}
+	srcPort := uint16(srcPortUint)
+
+	dstPortUint, err := strconv.ParseUint(dstPortStr, 10, 16)
+	if err != nil {
+		return nil, err
+	}
+	dstPort := uint16(dstPortUint)
+
+	ipLayer, err := CraftIPPacket(srcIPStr, dstIPStr, "TCP")
+	if err != nil {
+		return nil, err
+	}
+
+	tcpLayer := &layers.TCP{
+		SrcPort: layers.TCPPort(srcPort),
+		DstPort: layers.TCPPort(dstPort),
+	}
+	// Add SetNetworkLayerForChecksum for TCP layer
+	tcpLayer.SetNetworkLayerForChecksum(ipLayer)
+
+	// Add payload to the TCP layer
+	payload := gopacket.Payload([]byte(payloadStr))
+	tcpLayer.Ack = 0
+	tcpLayer.Seq = 0
+	tcpLayer.Window = 1505
+
+	// Serialize the packet
+	opts := gopacket.SerializeOptions{
+		ComputeChecksums: true,
+		FixLengths:       true,
+	}
+	buffer := gopacket.NewSerializeBuffer()
+	err = gopacket.SerializeLayers(buffer, opts, ipLayer, tcpLayer, payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize TCP packet: %v", err)
+	}
+
+	return buffer.Bytes(), nil
+}
+
+func CraftUDPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr string) ([]byte, error) {
+	srcIP := net.ParseIP(srcIPStr)
+	dstIP := net.ParseIP(dstIPStr)
+
+	srcPortUint, err := strconv.ParseUint(srcPortStr, 10, 16)
+	if err != nil {
+		return nil, err
+	}
+	srcPort := uint16(srcPortUint)
+
+	dstPortUint, err := strconv.ParseUint(dstPortStr, 10, 16)
+	if err != nil {
+		return nil, err
+	}
+	dstPort := uint16(dstPortUint)
+
+	ipLayer := &layers.IPv4{
+		SrcIP:    srcIP,
+		DstIP:    dstIP,
+		Version:  4,
+		TTL:      64,
+		Protocol: layers.IPProtocolUDP,
+	}
+
+	udpLayer := &layers.UDP{
+		SrcPort: layers.UDPPort(srcPort),
+		DstPort: layers.UDPPort(dstPort),
+	}
+	udpLayer.SetNetworkLayerForChecksum(ipLayer)
+
+	// Add payload to the UDP layer
+	payload := gopacket.Payload([]byte(payloadStr))
+	udpLayer.Length = uint16(len(payloadStr) + 8)
+
+	// Serialize the packet
+	opts := gopacket.SerializeOptions{
+		ComputeChecksums: true,
+		FixLengths:       true,
+	}
+	buffer := gopacket.NewSerializeBuffer()
+	err = gopacket.SerializeLayers(buffer, opts, ipLayer, udpLayer, payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize UDP packet: %v", err)
+	}
+
+	return buffer.Bytes(), nil
+}
+
+func CraftDNSPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, queryDomain string) ([]byte, error) {
+	srcIP := net.ParseIP(srcIPStr)
+	dstIP := net.ParseIP(dstIPStr)
+
+	srcPortUint, err := strconv.ParseUint(srcPortStr, 10, 16)
+	if err != nil {
+		return nil, err
+	}
+	srcPort := uint16(srcPortUint)
+
+	dstPortUint, err := strconv.ParseUint(dstPortStr, 10, 16)
+	if err != nil {
+		return nil, err
+	}
+	dstPort := uint16(dstPortUint)
+
+	ipLayer := &layers.IPv4{
+		SrcIP:    srcIP,
+		DstIP:    dstIP,
+		Version:  4,
+		TTL:      64,
+		Protocol: layers.IPProtocolUDP,
+	}
+
+	udpLayer := &layers.UDP{
+		SrcPort: layers.UDPPort(srcPort),
+		DstPort: layers.UDPPort(dstPort),
+	}
+	udpLayer.SetNetworkLayerForChecksum(ipLayer)
+
+	dnsLayer := &layers.DNS{
+		ID:      0xAAAA,
+		QR:      false,
+		OpCode:  layers.DNSOpCodeQuery,
+		QDCount: 1,
+	}
+
+	dnsLayer.Questions = append(dnsLayer.Questions, layers.DNSQuestion{
+		Name:  []byte(queryDomain),
+		Type:  layers.DNSTypeA,
+		Class: layers.DNSClassIN,
+	})
+
+	buffer := gopacket.NewSerializeBuffer()
+	serializeOptions := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
+	}
+
+	// Serialize all layers together: IP, UDP, and DNS
+	err = gopacket.SerializeLayers(buffer, serializeOptions, ipLayer, udpLayer, dnsLayer)
+	if err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
 }

@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	sniffer "ping.go/Sniffer"
+	sniffer "main.go/Sniffer"
 )
 
 func execFunc(cmd string) {
