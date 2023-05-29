@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"main.go/utils"
+	utils "main.go/utils"
 )
 
 func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string) ([]byte, error) {
@@ -28,16 +28,29 @@ func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string) ([]byte, er
 		return nil, err
 	}
 
+	srcMACaux, err := net.ParseMAC(srcMAC)
+	if err != nil {
+		return nil, fmt.Errorf("invalid source MAC address: %v", err)
+	}
+
+	dstMACaux, err := net.ParseMAC(dstMAC)
+	if err != nil {
+		return nil, fmt.Errorf("invalid destination MAC address: %v", err)
+	}
+
+	srcIPaux := net.ParseIP(srcIP).To4()
+	dstIPaux := net.ParseIP(dstIP).To4()
+
 	arpLayer := &layers.ARP{
 		AddrType:          layers.LinkTypeEthernet,
 		Protocol:          layers.EthernetTypeIPv4,
 		HwAddressSize:     6,
 		ProtAddressSize:   4,
 		Operation:         layers.ARPRequest,
-		SourceHwAddress:   srcMAC,
-		SourceProtAddress: srcIP.To4(),
-		DstHwAddress:      dstMAC,
-		DstProtAddress:    dstIP.To4(),
+		SourceHwAddress:   srcMACaux,
+		SourceProtAddress: srcIPaux.To4(),
+		DstHwAddress:      dstMACaux,
+		DstProtAddress:    dstIPaux.To4(),
 	}
 
 	buffer := gopacket.NewSerializeBuffer()
@@ -55,8 +68,18 @@ func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string) ([]byte, er
 }
 
 func CraftIPPacket(srcIPStr, dstIPStr, protocol string) (*layers.IPv4, error) {
-	srcIP := net.ParseIP(srcIPStr)
-	dstIP := net.ParseIP(dstIPStr)
+
+	srcIP, err := utils.ParseIPGen(srcIPStr)
+	if err != nil {
+		return nil, err
+	}
+	dstIP, err := utils.ParseIPGen(dstIPStr)
+	if err != nil {
+		return nil, err
+	}
+
+	srcIPaux := net.ParseIP(srcIP)
+	dstIPaux := net.ParseIP(dstIP)
 
 	var ipProtocol layers.IPProtocol
 	switch protocol {
@@ -69,8 +92,8 @@ func CraftIPPacket(srcIPStr, dstIPStr, protocol string) (*layers.IPv4, error) {
 	}
 
 	ipLayer := &layers.IPv4{
-		SrcIP:    srcIP,
-		DstIP:    dstIP,
+		SrcIP:    srcIPaux,
+		DstIP:    dstIPaux,
 		Version:  4,
 		TTL:      64,
 		Protocol: ipProtocol,

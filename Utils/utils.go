@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"math/rand"
 	"net"
 	"strings"
@@ -10,22 +9,20 @@ import (
 
 // Function to generate a random IP address within a specified CIDR block
 func RandomIP(cidr string) (string, error) {
-	_, ipNet, err := net.ParseCIDR(cidr)
+	_, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return "", err
 	}
 
-	ip := ipNet.IP.To4()
-	if ip == nil {
-		return "", fmt.Errorf("CIDR block does not specify an IPv4 network")
+	ip := ipnet.IP.To4()
+	randBytes := make([]byte, 4)
+	_, err = rand.Read(randBytes)
+	if err != nil {
+		return "", err
 	}
 
-	for i := 0; i < 4; i++ {
-		// We do not want to generate IPs with 0 or 255 in any octet
-		ip[i] += byte(rand.Intn(254) + 1)
-		if ip[i] >= ipNet.Mask[i] {
-			ip[i] &= ipNet.Mask[i]
-		}
+	for i := range ip {
+		ip[i] = (ip[i] & ipnet.Mask[i]) | (randBytes[i] & ^ipnet.Mask[i])
 	}
 
 	return ip.String(), nil

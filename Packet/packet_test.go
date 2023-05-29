@@ -57,7 +57,7 @@ func TestCraftDNSPacket(t *testing.T) {
 func TestCraftARPPacket(t *testing.T) {
 	srcMAC := "00:11:22:33:44:55"
 	dstMAC := "66:77:88:99:aa:bb"
-	srcIP := "192.168.1.1"
+	srcIP := "192.168.1.0/24"
 	dstIP := "192.168.1.2"
 
 	packetBytes, err := CraftARPPacket(srcIP, dstIP, srcMAC, dstMAC)
@@ -79,7 +79,7 @@ func TestCraftARPPacket(t *testing.T) {
 }
 
 func TestCraftIPPacket(t *testing.T) {
-	srcIP := "192.168.1.1"
+	srcIP := "10.0.0.0"
 	dstIP := "8.8.8.8"
 
 	ipLayer, err := CraftIPPacket(srcIP, dstIP, "TCP")
