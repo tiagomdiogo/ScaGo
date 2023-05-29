@@ -55,3 +55,12 @@ func ParseMACGen(macStr string) (string, error) {
 	}
 	return macStr, nil
 }
+
+func GetMACAddress(ifaceName string) (string, error) {
+	iface, err := net.InterfaceByName(ifaceName)
+	if err != nil {
+		return "", err
+	}
+
+	return iface.HardwareAddr.String(), nil
+}
