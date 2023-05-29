@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/gopacket/layers"
-	"main.go/packet"
+	"github.com/tiagomdiogo/GoPpy/packet"
 )
 
 func TestSuperSocketARPCapture(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	sniffer "main.go/Sniffer"
+	sniffer "github.com/tiagomdiogo/GoPpy/sniffer"
 )
 
 func execFunc(cmd string) {

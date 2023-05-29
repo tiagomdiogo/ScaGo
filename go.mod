@@ -1,4 +1,4 @@
-module main.go
+module github.com/tiagomdiogo/GoPpy
 
 go 1.19
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	utils "main.go/utils"
+	utils "github.com/tiagomdiogo/GoPpy/utils"
 )
 
 func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string) ([]byte, error) {

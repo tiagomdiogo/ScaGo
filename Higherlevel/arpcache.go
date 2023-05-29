@@ -1,4 +1,4 @@
-package arpcache
+package higherlevel
 
 import (
 	"fmt"
@@ -6,9 +6,9 @@ import (
 	"net"
 	"time"
 
-	utils "main.go/Utils"
-	craft "main.go/packet"
-	socket "main.go/supersocket"
+	craft "github.com/tiagomdiogo/GoPpy/packet"
+	socket "github.com/tiagomdiogo/GoPpy/supersocket"
+	utils "github.com/tiagomdiogo/GoPpy/utils"
 )
 
 func arpcachepoisoning(interfaceName string, victimsIP string, gatewayIPs string) {
