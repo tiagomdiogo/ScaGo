@@ -108,7 +108,7 @@ func CraftIPPacket(srcIPStr, dstIPStr, protocol string) (*layers.IPv4, error) {
 	return ipLayer, nil
 }
 
-func CraftTCPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr string) ([]byte, error) {
+func CraftTCPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr, packetType string) ([]byte, error) {
 	srcPortUint, err := strconv.ParseUint(srcPortStr, 10, 16)
 	if err != nil {
 		return nil, err
@@ -129,15 +129,21 @@ func CraftTCPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr strin
 	tcpLayer := &layers.TCP{
 		SrcPort: layers.TCPPort(srcPort),
 		DstPort: layers.TCPPort(dstPort),
+		Seq:     0,
+		Window:  1505,
 	}
-	// Add SetNetworkLayerForChecksum for TCP layer
+
+	switch packetType {
+	case "SYN":
+		tcpLayer.SYN = true
+	case "ACK":
+		tcpLayer.ACK = true
+	}
+
 	tcpLayer.SetNetworkLayerForChecksum(ipLayer)
 
 	// Add payload to the TCP layer
 	payload := gopacket.Payload([]byte(payloadStr))
-	tcpLayer.Ack = 0
-	tcpLayer.Seq = 0
-	tcpLayer.Window = 1505
 
 	// Serialize the packet
 	opts := gopacket.SerializeOptions{

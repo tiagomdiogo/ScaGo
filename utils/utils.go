@@ -3,6 +3,7 @@ package utils
 import (
 	"math/rand"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -63,4 +64,8 @@ func GetMACAddress(ifaceName string) (string, error) {
 	}
 
 	return iface.HardwareAddr.String(), nil
+}
+
+func randomPort() string {
+	return strconv.Itoa(rand.Intn(65535))
 }

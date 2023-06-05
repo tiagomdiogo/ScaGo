@@ -129,7 +129,7 @@ func TestCraftTCPPacket(t *testing.T) {
 	dstPort := "80"
 	payload := "Hello, World!"
 
-	packetBytes, err := CraftTCPPacket(srcIP, dstIP, srcPort, dstPort, payload)
+	packetBytes, err := CraftTCPPacket(srcIP, dstIP, srcPort, dstPort, payload, "SYN")
 	if err != nil {
 		t.Fatalf("Failed to craft TCP packet: %v", err)
 	}
