@@ -60,7 +60,7 @@ func TestCraftARPPacket(t *testing.T) {
 	srcIP := "192.168.1.0/24"
 	dstIP := "192.168.1.2"
 
-	packetBytes, err := CraftARPPacket(srcIP, dstIP, srcMAC, dstMAC)
+	packetBytes, err := CraftARPPacket(srcIP, dstIP, srcMAC, dstMAC, false)
 	if err != nil {
 		t.Fatalf("Failed to craft ARP packet: %v", err)
 	}

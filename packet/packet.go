@@ -10,7 +10,7 @@ import (
 	utils "github.com/tiagomdiogo/GoPpy/utils"
 )
 
-func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string) ([]byte, error) {
+func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string, isReply bool) ([]byte, error) {
 	srcIP, err := utils.ParseIPGen(srcIPStr)
 	if err != nil {
 		return nil, err
@@ -46,11 +46,17 @@ func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string) ([]byte, er
 		Protocol:          layers.EthernetTypeIPv4,
 		HwAddressSize:     6,
 		ProtAddressSize:   4,
-		Operation:         layers.ARPRequest,
 		SourceHwAddress:   srcMACaux,
 		SourceProtAddress: srcIPaux.To4(),
 		DstHwAddress:      dstMACaux,
 		DstProtAddress:    dstIPaux.To4(),
+	}
+
+	// Set the operation type of the ARP packet based on the isReply argument
+	if isReply {
+		arpLayer.Operation = layers.ARPReply
+	} else {
+		arpLayer.Operation = layers.ARPRequest
 	}
 
 	buffer := gopacket.NewSerializeBuffer()

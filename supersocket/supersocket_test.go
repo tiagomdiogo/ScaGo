@@ -24,7 +24,7 @@ func TestSuperSocketARPCapture(t *testing.T) {
 	srcMAC := "08:00:27:01:02:03"
 	dstMAC := "ff:ff:ff:ff:ff:ff"
 
-	arpPacket, err := packet.CraftARPPacket(srcIP, dstIP, srcMAC, dstMAC)
+	arpPacket, err := packet.CraftARPPacket(srcIP, dstIP, srcMAC, dstMAC, false)
 	if err != nil {
 		log.Fatalf("Failed to craft ARP packet: %v", err)
 	}

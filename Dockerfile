@@ -21,4 +21,4 @@ RUN go install -v ./...
 RUN go build -o main .
 
 # This docker image will start with this command line
-CMD ["/app/main"]
+CMD ["/bin/bash"]
