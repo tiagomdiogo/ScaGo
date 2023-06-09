@@ -66,6 +66,6 @@ func GetMACAddress(ifaceName string) (string, error) {
 	return iface.HardwareAddr.String(), nil
 }
 
-func randomPort() string {
+func RandomPort() string {
 	return strconv.Itoa(rand.Intn(65535))
 }

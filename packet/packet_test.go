@@ -15,7 +15,7 @@ func TestCraftDNSPacket(t *testing.T) {
 	dstPort := "53"
 	queryDomain := "example.com"
 
-	packetBytes, err := CraftDNSPacket(srcIP, dstIP, srcPort, dstPort, queryDomain)
+	packetBytes, err := CraftDNSQueryPacket(srcIP, dstIP, srcPort, dstPort, queryDomain)
 	if err != nil {
 		t.Fatalf("Failed to craft DNS packet: %v", err)
 	}

@@ -1,24 +1,18 @@
-# Start from the latest Golang image
+
 FROM golang:latest
 
-# Update the package list and install git
-RUN apt-get update && apt-get install -y git
-RUN apt-get update && apt-get install -y libpcap-dev
+LABEL maintainer="Tiago Diogo <tiago.m.diogo@tecnico.ulisboa.pt>"
 
-# Set the Current Working Directory inside the container
-WORKDIR /app
+ENV GO111MODULE=on
 
-# Copy everything from the current directory to the Working Directory inside the container
-COPY . .
+COPY go.mod go.sum ./
 
-# Download all the dependencies
-RUN go get -d -v ./...
+RUN go mod download 
 
-# Install the package
-RUN go install -v ./...
+RUN go get -u github.com/tiagomdiogo/GoPpy
 
-# Build the Go app
-RUN go build -o main .
 
-# This docker image will start with this command line
+RUN apt-get update && apt-get install -y \
+    git \
+    nano
 CMD ["/bin/bash"]
