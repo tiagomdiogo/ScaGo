@@ -1,28 +1,20 @@
-package GoPpy
+package goppy
 
-import (
-	"bufio"
-	"fmt"
-	"log"
-	"os"
-	"strings"
-
-	sniffer "github.com/tiagomdiogo/GoPpy/sniffer"
-)
-
+/*
 func execFunc(cmd string) {
 	cmdString := strings.TrimSuffix(cmd, "\n")
 	arrCmd := strings.Fields(cmdString)
 
 	switch arrCmd[0] {
 	case "sniffer":
-		interface_name := arrCmd[1]
-		sniffer.CapturePacket(interface_name)
+		//interface_name := arrCmd[1]
+		//sniffer.CapturePacket(interface_name)
 	case "send":
 	}
 }
 
-func main() {
+/*
+func goppy() {
 
 	fmt.Println("Welcome to Go Sniffer. To get help in usage please use the -help argument.")
 
@@ -41,3 +33,5 @@ func main() {
 	}
 
 }
+
+*/
