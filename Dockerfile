@@ -1,18 +1,19 @@
-
+# Start from the latest golang base image
 FROM golang:latest
+# Set the Current Working Directory inside the container
+WORKDIR /app
 
-LABEL maintainer="Tiago Diogo <tiago.m.diogo@tecnico.ulisboa.pt>"
-
-ENV GO111MODULE=on
-
+# Copy go.mod and go.sum files to the workspace
 COPY go.mod go.sum ./
 
-RUN go mod download 
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+RUN go mod download
 
-RUN go get -u github.com/tiagomdiogo/GoPpy
+# Copy the source from the current directory to the Working Directory inside the container
+COPY . .
 
+# Install nano
+RUN apt-get update && apt-get install -y nano
 
-RUN apt-get update && apt-get install -y \
-    git \
-    nano
-CMD ["/bin/bash"]
+# Set the entrypoint to be the bash shell
+ENTRYPOINT ["/bin/bash"]
