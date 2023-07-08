@@ -1,29 +1,28 @@
 package packet
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 )
 
-func CraftTCPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr, packetType string) ([]byte, error) {
+func CraftTCPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr, packetType string) (*layers.IPv4, *layers.TCP, gopacket.Payload, error) {
 	srcPortUint, err := strconv.ParseUint(srcPortStr, 10, 16)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	srcPort := uint16(srcPortUint)
 
 	dstPortUint, err := strconv.ParseUint(dstPortStr, 10, 16)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	dstPort := uint16(dstPortUint)
 
-	ipLayer, err := CraftIPPacket(srcIPStr, dstIPStr, "TCP")
+	ipLayer, err := CraftIPPacket(srcIPStr, dstIPStr)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	tcpLayer := &layers.TCP{
@@ -32,6 +31,10 @@ func CraftTCPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr, pack
 		Seq:     0,
 		Window:  1505,
 	}
+
+	var ipProtocol layers.IPProtocol
+	ipProtocol = layers.IPProtocolTCP
+	ipLayer.Protocol = ipProtocol
 
 	switch packetType {
 	case "SYN":
@@ -45,58 +48,41 @@ func CraftTCPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr, pack
 	// Add payload to the TCP layer
 	payload := gopacket.Payload([]byte(payloadStr))
 
-	// Serialize the packet
-	opts := gopacket.SerializeOptions{
-		ComputeChecksums: true,
-		FixLengths:       true,
-	}
-	buffer := gopacket.NewSerializeBuffer()
-	err = gopacket.SerializeLayers(buffer, opts, ipLayer, tcpLayer, payload)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize TCP packet: %v", err)
-	}
-
-	return buffer.Bytes(), nil
+	return ipLayer, tcpLayer, payload, nil
 }
 
-func CraftUDPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr string) ([]byte, error) {
+func CraftUDPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr string) (*layers.IPv4, *layers.UDP, gopacket.Payload, error) {
 
 	srcPortUint, err := strconv.ParseUint(srcPortStr, 10, 16)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	srcPort := uint16(srcPortUint)
 
 	dstPortUint, err := strconv.ParseUint(dstPortStr, 10, 16)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	dstPort := uint16(dstPortUint)
 
-	ipLayer, err := CraftIPPacket(srcIPStr, dstIPStr, "UDP")
+	ipLayer, err := CraftIPPacket(srcIPStr, dstIPStr)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
+
 	udpLayer := &layers.UDP{
 		SrcPort: layers.UDPPort(srcPort),
 		DstPort: layers.UDPPort(dstPort),
 	}
 	udpLayer.SetNetworkLayerForChecksum(ipLayer)
 
+	var ipProtocol layers.IPProtocol
+	ipProtocol = layers.IPProtocolUDP
+	ipLayer.Protocol = ipProtocol
+
 	// Add payload to the UDP layer
 	payload := gopacket.Payload([]byte(payloadStr))
 	udpLayer.Length = uint16(len(payloadStr) + 8)
 
-	// Serialize the packet
-	opts := gopacket.SerializeOptions{
-		ComputeChecksums: true,
-		FixLengths:       true,
-	}
-	buffer := gopacket.NewSerializeBuffer()
-	err = gopacket.SerializeLayers(buffer, opts, ipLayer, udpLayer, payload)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize UDP packet: %v", err)
-	}
-
-	return buffer.Bytes(), nil
+	return ipLayer, udpLayer, payload, nil
 }

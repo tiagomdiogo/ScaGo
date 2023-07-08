@@ -1,42 +1,17 @@
 package packet
 
 import (
-	"net"
-	"strconv"
-
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"net"
 )
 
-func CraftDNSQueryPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, queryDomain string) ([]byte, error) {
-	srcIP := net.ParseIP(srcIPStr)
-	dstIP := net.ParseIP(dstIPStr)
+func CraftDNSQueryPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, queryDomain string) (*layers.IPv4, *layers.UDP, gopacket.Payload, *layers.DNS, error) {
 
-	srcPortUint, err := strconv.ParseUint(srcPortStr, 10, 16)
+	ipLayer, udpLayer, payload, err := CraftUDPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, "")
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, nil, err
 	}
-	srcPort := uint16(srcPortUint)
-
-	dstPortUint, err := strconv.ParseUint(dstPortStr, 10, 16)
-	if err != nil {
-		return nil, err
-	}
-	dstPort := uint16(dstPortUint)
-
-	ipLayer := &layers.IPv4{
-		SrcIP:    srcIP,
-		DstIP:    dstIP,
-		Version:  4,
-		TTL:      64,
-		Protocol: layers.IPProtocolUDP,
-	}
-
-	udpLayer := &layers.UDP{
-		SrcPort: layers.UDPPort(srcPort),
-		DstPort: layers.UDPPort(dstPort),
-	}
-	udpLayer.SetNetworkLayerForChecksum(ipLayer)
 
 	dnsLayer := &layers.DNS{
 		ID:      0xAAAA,
@@ -51,50 +26,15 @@ func CraftDNSQueryPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, queryDomain
 		Class: layers.DNSClassIN,
 	})
 
-	buffer := gopacket.NewSerializeBuffer()
-	serializeOptions := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
-	// Serialize all layers together: IP, UDP, and DNS
-	err = gopacket.SerializeLayers(buffer, serializeOptions, ipLayer, udpLayer, dnsLayer)
-	if err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
+	return ipLayer, udpLayer, payload, dnsLayer, nil
 }
 
-func CraftDNSResponsePacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, queryDomain, answerIP string, transactionID uint16) ([]byte, error) {
-	srcIP := net.ParseIP(srcIPStr)
-	dstIP := net.ParseIP(dstIPStr)
+func CraftDNSResponsePacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, queryDomain, answerIP string, transactionID uint16) (*layers.IPv4, *layers.UDP, gopacket.Payload, *layers.DNS, error) {
 
-	srcPortUint, err := strconv.ParseUint(srcPortStr, 10, 16)
+	ipLayer, udpLayer, payload, err := CraftUDPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, "")
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, nil, err
 	}
-	srcPort := uint16(srcPortUint)
-
-	dstPortUint, err := strconv.ParseUint(dstPortStr, 10, 16)
-	if err != nil {
-		return nil, err
-	}
-	dstPort := uint16(dstPortUint)
-
-	ipLayer := &layers.IPv4{
-		SrcIP:    srcIP,
-		DstIP:    dstIP,
-		Version:  4,
-		TTL:      64,
-		Protocol: layers.IPProtocolUDP,
-	}
-
-	udpLayer := &layers.UDP{
-		SrcPort: layers.UDPPort(srcPort),
-		DstPort: layers.UDPPort(dstPort),
-	}
-	udpLayer.SetNetworkLayerForChecksum(ipLayer)
 
 	dnsLayer := &layers.DNS{
 		ID:      transactionID, // Match transaction ID
@@ -120,17 +60,5 @@ func CraftDNSResponsePacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, queryDom
 		IP:    net.ParseIP(answerIP),
 	})
 
-	buffer := gopacket.NewSerializeBuffer()
-	serializeOptions := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
-	// Serialize all layers together: IP, UDP, and DNS
-	err = gopacket.SerializeLayers(buffer, serializeOptions, ipLayer, udpLayer, dnsLayer)
-	if err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
+	return ipLayer, udpLayer, payload, dnsLayer, nil
 }

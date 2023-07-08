@@ -9,7 +9,7 @@ import (
 	utils "github.com/tiagomdiogo/GoPpy/utils"
 )
 
-func cam(iface, dstMAC string, packetCount int) {
+func Cam(iface, dstMAC string, packetCount int) {
 
 	ss, err := communication.NewSuperSocket(iface, "")
 	if err != nil {
@@ -29,12 +29,12 @@ func cam(iface, dstMAC string, packetCount int) {
 				fmt.Println("Error crafting ARP packet:", err)
 				return
 			}
-			arpPacket, err := craft.CraftEthernetPacket(randomSrcMAC, dstMAC, "")
+			packet, err := craft.CraftEthernetPacket(randomSrcMAC, dstMAC, "")
 			if err != nil {
 				fmt.Println("Error crafting ARP packet:", err)
 				return
 			}
-			packets[i] = arpPacket
+			packets[i] = packet
 		}(i)
 	}
 

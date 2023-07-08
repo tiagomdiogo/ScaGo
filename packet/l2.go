@@ -10,7 +10,7 @@ import (
 	utils "github.com/tiagomdiogo/GoPpy/utils"
 )
 
-func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string, isReply bool) ([]byte, error) {
+func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string, isReply bool) (*layers.ARP, error) {
 	srcIP, err := utils.ParseIPGen(srcIPStr)
 	if err != nil {
 		return nil, err
@@ -59,21 +59,10 @@ func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string, isReply boo
 		arpLayer.Operation = layers.ARPRequest
 	}
 
-	buffer := gopacket.NewSerializeBuffer()
-	serializeOptions := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
-	err = gopacket.SerializeLayers(buffer, serializeOptions, arpLayer)
-	if err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
+	return arpLayer, nil
 }
 
-func CraftEthernetPacket(srcMACStr, dstMACStr string, payloadStr string) ([]byte, error) {
+func CraftEthernetPacket(srcMACStr, dstMACStr string) (*layers.Ethernet, error) {
 	srcMAC, err := utils.ParseMACGen(srcMACStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid source MAC address: %v", err)
@@ -97,26 +86,13 @@ func CraftEthernetPacket(srcMACStr, dstMACStr string, payloadStr string) ([]byte
 	ethernetLayer := &layers.Ethernet{
 		SrcMAC:       srcMACaux,
 		DstMAC:       dstMACaux,
-		EthernetType: layers.EthernetTypeIPv4,
+		EthernetType: layers.EthernetTypeLLC,
 	}
 
-	// Add payload to the Ethernet layer
-	payload := gopacket.Payload([]byte(payloadStr))
-
-	// Serialize the packet
-	opts := gopacket.SerializeOptions{
-		ComputeChecksums: true,
-		FixLengths:       true,
-	}
-	buffer := gopacket.NewSerializeBuffer()
-	err = gopacket.SerializeLayers(buffer, opts, ethernetLayer, payload)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize Ethernet packet: %v", err)
-	}
-
-	return buffer.Bytes(), nil
+	return ethernetLayer, nil
 }
 
+// todo missing change of return to layers
 func CraftDHCPPacket(srcMACStr, dhcpType string) ([]byte, error) {
 
 	srcMAC, err := utils.ParseMACGen(srcMACStr)

@@ -8,6 +8,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
+// todo change all the test logic to our new implementation of packet construction
 func TestCraftDNSPacket(t *testing.T) {
 	srcIP := "192.168.1.1"
 	dstIP := "8.8.8.8"
@@ -82,7 +83,7 @@ func TestCraftIPPacket(t *testing.T) {
 	srcIP := "10.0.0.0"
 	dstIP := "8.8.8.8"
 
-	ipLayer, err := CraftIPPacket(srcIP, dstIP, "TCP")
+	ipLayer, err := CraftIPPacket(srcIP, dstIP)
 	if err != nil {
 		t.Fatalf("Failed to craft IP packet: %v", err)
 	}

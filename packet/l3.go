@@ -1,14 +1,13 @@
 package packet
 
 import (
-	"fmt"
 	"net"
 
 	"github.com/google/gopacket/layers"
 	utils "github.com/tiagomdiogo/GoPpy/utils"
 )
 
-func CraftIPPacket(srcIPStr, dstIPStr, protocol string) (*layers.IPv4, error) {
+func CraftIPPacket(srcIPStr, dstIPStr string) (*layers.IPv4, error) {
 
 	srcIP, err := utils.ParseIPGen(srcIPStr)
 	if err != nil {
@@ -22,22 +21,11 @@ func CraftIPPacket(srcIPStr, dstIPStr, protocol string) (*layers.IPv4, error) {
 	srcIPaux := net.ParseIP(srcIP)
 	dstIPaux := net.ParseIP(dstIP)
 
-	var ipProtocol layers.IPProtocol
-	switch protocol {
-	case "TCP":
-		ipProtocol = layers.IPProtocolTCP
-	case "UDP":
-		ipProtocol = layers.IPProtocolUDP
-	default:
-		return nil, fmt.Errorf("unsupported protocol: %s", protocol)
-	}
-
 	ipLayer := &layers.IPv4{
-		SrcIP:    srcIPaux,
-		DstIP:    dstIPaux,
-		Version:  4,
-		TTL:      64,
-		Protocol: ipProtocol,
+		SrcIP:   srcIPaux,
+		DstIP:   dstIPaux,
+		Version: 4,
+		TTL:     64,
 	}
 
 	return ipLayer, nil
