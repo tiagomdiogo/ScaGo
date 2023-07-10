@@ -1,15 +1,6 @@
 package higherlevel
 
-import (
-	"net"
-	"time"
-
-	"github.com/google/gopacket/layers"
-	"github.com/tiagomdiogo/GoPpy/packet"
-	"github.com/tiagomdiogo/GoPpy/supersocket"
-	utils "github.com/tiagomdiogo/GoPpy/utils"
-)
-
+/*
 func ARPScan(iface string, targetIP string) (string, error) {
 	// Get MAC address of interface
 	srcMAC, err := utils.GetMACAddress(iface)
@@ -111,3 +102,6 @@ func ARPCachePoison(iface string, targetIP string, gatewayIP string) error {
 
 	return nil
 }
+
+
+*/

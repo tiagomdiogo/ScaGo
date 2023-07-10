@@ -92,41 +92,25 @@ func CraftEthernetPacket(srcMACStr, dstMACStr string) (*layers.Ethernet, error) 
 	return ethernetLayer, nil
 }
 
-// todo missing change of return to layers
-func CraftDHCPPacket(srcMACStr, dhcpType string) ([]byte, error) {
+func CraftDHCPPacket(srcMACStr, dhcpType string) (*layers.Ethernet, *layers.IPv4, *layers.UDP, gopacket.Payload, *layers.DHCPv4, error) {
+
+	//Layer 2
+	eth, err := CraftEthernetPacket(srcMACStr, "00:00:00:00:00:00")
+
+	ipLayer, udpLayer, payload, err := CraftUDPPacket("0.0.0.0", "255.255.255.255", "67", "67", "")
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
 
 	srcMAC, err := utils.ParseMACGen(srcMACStr)
 	if err != nil {
-		return nil, fmt.Errorf("invalid source MAC address: %v", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("invalid source MAC address: %v", err)
 	}
 
 	srcMACaux, err := net.ParseMAC(srcMAC)
 	if err != nil {
-		return nil, fmt.Errorf("invalid source MAC address: %v", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("invalid source MAC address: %v", err)
 	}
-	// Ethernet layer
-	eth := &layers.Ethernet{
-		SrcMAC:       srcMACaux,
-		DstMAC:       layers.EthernetBroadcast,
-		EthernetType: layers.EthernetTypeIPv4,
-	}
-
-	// IP layer
-	ip := &layers.IPv4{
-		Version:  4,
-		TTL:      64,
-		SrcIP:    net.IPv4zero,
-		DstIP:    net.IPv4bcast,
-		Protocol: layers.IPProtocolUDP,
-	}
-
-	// UDP layer
-	udp := &layers.UDP{
-		SrcPort: layers.UDPPort(68),
-		DstPort: layers.UDPPort(67),
-	}
-	udp.SetNetworkLayerForChecksum(ip)
-
 	// DHCP layer
 	dhcp := &layers.DHCPv4{
 		Operation:    layers.DHCPOpRequest,
@@ -150,7 +134,7 @@ func CraftDHCPPacket(srcMACStr, dhcpType string) ([]byte, error) {
 	case "ack":
 		msgType = layers.DHCPMsgTypeAck
 	default:
-		return nil, fmt.Errorf("Unknown DHCP message type: %s", dhcpType)
+		return nil, nil, nil, nil, nil, fmt.Errorf("Unknown DHCP message type: %s", dhcpType)
 	}
 
 	// DHCP Options
@@ -160,16 +144,5 @@ func CraftDHCPPacket(srcMACStr, dhcpType string) ([]byte, error) {
 		layers.NewDHCPOption(layers.DHCPOptEnd, nil),
 	)
 
-	// Serialize
-	buffer := gopacket.NewSerializeBuffer()
-	opts := gopacket.SerializeOptions{
-		ComputeChecksums: true,
-		FixLengths:       true,
-	}
-	err = gopacket.SerializeLayers(buffer, opts, eth, ip, udp, dhcp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize DHCP packet: %v", err)
-	}
-
-	return buffer.Bytes(), nil
+	return eth, ipLayer, udpLayer, payload, dhcp, nil
 }

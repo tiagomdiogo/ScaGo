@@ -1,14 +1,6 @@
 package higherlevel
 
-import (
-	"log"
-	"time"
-
-	packet "github.com/tiagomdiogo/GoPpy/packet"
-	"github.com/tiagomdiogo/GoPpy/supersocket"
-	utils "github.com/tiagomdiogo/GoPpy/utils"
-)
-
+/*
 func TCPSYNFlood(targetIP, targetPort, payload string, attackDuration int) {
 	socket, err := supersocket.NewSuperSocket("eth0", "")
 	if err != nil {
@@ -35,3 +27,6 @@ func TCPSYNFlood(targetIP, targetPort, payload string, attackDuration int) {
 		}
 	}
 }
+
+
+*/

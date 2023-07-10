@@ -75,3 +75,7 @@ func (ss *SuperSocket) SendMultiplePackets(packets [][]byte, maxConcurrentSends 
 
 	return nil
 }
+
+func (ss *SuperSocket) SendBytes(packetBytes []byte) error {
+	return ss.handle.WritePacketData(packetBytes)
+}

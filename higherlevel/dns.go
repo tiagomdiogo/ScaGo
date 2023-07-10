@@ -1,15 +1,6 @@
 package higherlevel
 
-import (
-	"fmt"
-	"log"
-
-	"github.com/google/gopacket/layers"
-
-	craft "github.com/tiagomdiogo/GoPpy/packet"
-	sockets "github.com/tiagomdiogo/GoPpy/supersocket"
-)
-
+/*
 // todo use Supersocket class
 func DNSSpoofing(srcIP, dstIP, srcPort, dstPort, iface, queryDomain, answerIP string) error {
 	// Open a live packet capture
@@ -56,3 +47,5 @@ func DNSSpoofing(srcIP, dstIP, srcPort, dstPort, iface, queryDomain, answerIP st
 		}
 	}
 }
+
+*/

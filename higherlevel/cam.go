@@ -26,15 +26,19 @@ func Cam(iface, dstMAC string, packetCount int) {
 			defer wg.Done()
 			randomSrcMAC, err := utils.ParseMACGen("")
 			if err != nil {
-				fmt.Println("Error crafting ARP packet:", err)
+				fmt.Println("Error crafting Ethernet packet:", err)
 				return
 			}
-			packet, err := craft.CraftEthernetPacket(randomSrcMAC, dstMAC, "")
+			packetLayer, err := craft.CraftEthernetPacket(randomSrcMAC, dstMAC)
 			if err != nil {
-				fmt.Println("Error crafting ARP packet:", err)
+				fmt.Println("Error crafting Ethernet packet:", err)
 				return
 			}
-			packets[i] = packet
+			packets[i], err = craft.CraftPacket(packetLayer)
+			if err != nil {
+				fmt.Println("Error crafting Ethernet packet:", err)
+				return
+			}
 		}(i)
 	}
 
