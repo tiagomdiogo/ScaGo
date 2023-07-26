@@ -29,12 +29,11 @@ func Cam(iface, dstMAC string, packetCount int) {
 				fmt.Println("Error crafting Ethernet packet:", err)
 				return
 			}
-			packetLayer, err := craft.CraftEthernetPacket(randomSrcMAC, dstMAC)
-			if err != nil {
-				fmt.Println("Error crafting Ethernet packet:", err)
-				return
-			}
-			packets[i], err = craft.CraftPacket(packetLayer)
+			etherLayer := craft.EthernetLayer()
+			etherLayer.SetSrcMAC(randomSrcMAC)
+			etherLayer.SetDstMAC(dstMAC)
+
+			packets[i], err = craft.CraftPacket(etherLayer.Layer())
 			if err != nil {
 				fmt.Println("Error crafting Ethernet packet:", err)
 				return

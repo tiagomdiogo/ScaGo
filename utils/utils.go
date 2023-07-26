@@ -1,44 +1,45 @@
 package utils
 
 import (
+	"errors"
+	"fmt"
 	"math/rand"
 	"net"
+	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Function to generate a random IP address within a specified CIDR block
-func RandomIP(cidr string) (string, error) {
-	_, ipnet, err := net.ParseCIDR(cidr)
+func RandomIP(network string) (string, error) {
+	ip, ipNet, err := net.ParseCIDR(network)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse network: %w", err)
 	}
 
-	ip := ipnet.IP.To4()
-	randBytes := make([]byte, 4)
-	_, err = rand.Read(randBytes)
-	if err != nil {
-		return "", err
+	for i := 0; i < len(ip); i++ {
+		ip[i] = ip[i] | (ipNet.IP[i] &^ ipNet.Mask[i])
 	}
 
-	for i := range ip {
-		ip[i] = (ip[i] & ipnet.Mask[i]) | (randBytes[i] & ^ipnet.Mask[i])
+	if ip := ip.To4(); ip != nil {
+		ip[1] = byte(rand.Intn(255))
+		ip[2] = byte(rand.Intn(255))
+		ip[3] = byte(rand.Intn(255))
+		return ip.String(), nil
+	} else if ip := ip.To16(); ip != nil {
+		for i := 8; i < 16; i++ {
+			ip[i] = byte(rand.Intn(255))
+		}
+		return ip.String(), nil
 	}
 
-	return ip.String(), nil
+	return "", errors.New("could not generate random IP")
 }
 
 // Function to generate a random MAC address
 func RandomMAC() string {
-	rand.Seed(time.Now().UnixNano())
-	buf := make([]byte, 6)
-	_, _ = rand.Read(buf)
-
-	// Set the local bit, unset the multicast bit
-	buf[0] = (buf[0] | 2) & 0xfe
-
-	return net.HardwareAddr(buf).String()
+	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256))
 }
 
 func ParseIPGen(ipStr string) (string, error) {
@@ -68,4 +69,24 @@ func GetMACAddress(ifaceName string) (string, error) {
 
 func RandomPort() string {
 	return strconv.Itoa(rand.Intn(65535))
+}
+
+func GetRouteInterface(dstIP net.IP) (string, error) {
+	// Prepare the command
+	cmd := exec.Command("ip", "route", "get", dstIP.String())
+
+	// Execute the command and capture its output
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	// Use a regex to find the interface in the output
+	re := regexp.MustCompile(`dev\s+(\S+)`)
+	match := re.FindStringSubmatch(string(output))
+	if match == nil {
+		return "", errors.New("could not find interface in routing table")
+	}
+
+	return match[1], nil
 }
