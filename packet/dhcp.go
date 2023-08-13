@@ -30,6 +30,16 @@ func (d *DHCP) SetSrcMAC(macStr string) error {
 	if err != nil {
 		return errors.New("invalid source MAC address")
 	}
+	//TODO check src Mac
+	d.layer.ClientHWAddr = mac
+	return nil
+}
+
+func (d *DHCP) SetDstMac(macStr string) error {
+	mac, err := net.ParseMAC(macStr)
+	if err != nil {
+		return errors.New("invalid source MAC address")
+	}
 	d.layer.ClientHWAddr = mac
 	return nil
 }

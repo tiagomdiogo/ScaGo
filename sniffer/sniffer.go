@@ -1,40 +1,57 @@
 package sniffer
 
 import (
-	"fmt"
-	"log"
-	"time"
-
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
+	"sync"
 )
 
-const (
-	maxLenPacket int32         = 65535 //max size of a TCP Packet 64k
-	promiscuous  bool          = false
-	duration     time.Duration = -1 * time.Second
-)
-
-func CapturePacket(interface_name string) error {
-
-	handle, err := pcap.OpenLive(interface_name, maxLenPacket, promiscuous, duration)
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
-
-	defer handle.Close() //delay the execution of a function (Close handle) until the read finishes
-
-	return PrintPackets(handle)
-
+type Sniffer struct {
+	handle      *pcap.Handle
+	packetList  []gopacket.Packet
+	packetLock  sync.Mutex
+	packetLimit int
 }
 
-func PrintPackets(handle *pcap.Handle) error {
-	packetReceived := gopacket.NewPacketSource(handle, handle.LinkType())
-
-	for packet := range packetReceived.Packets() {
-		fmt.Println(packet)
+func NewSniffer(dev string, filter string, packetLimit int) (*Sniffer, error) {
+	handle, err := pcap.OpenLive(dev, 1600, true, pcap.BlockForever)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	if err := handle.SetBPFFilter(filter); err != nil {
+		handle.Close()
+		return nil, err
+	}
+
+	return &Sniffer{
+		handle:      handle,
+		packetList:  make([]gopacket.Packet, 0),
+		packetLimit: packetLimit,
+	}, nil
+}
+
+func (s *Sniffer) Start() {
+	packetSource := gopacket.NewPacketSource(s.handle, s.handle.LinkType())
+
+	for packet := range packetSource.Packets() {
+		s.packetLock.Lock()
+		if len(s.packetList) < s.packetLimit {
+			s.packetList = append(s.packetList, packet)
+		}
+		s.packetLock.Unlock()
+	}
+}
+
+func (s *Sniffer) Stop() {
+	s.handle.Close()
+}
+
+func (s *Sniffer) GetPackets() []gopacket.Packet {
+	s.packetLock.Lock()
+	defer s.packetLock.Unlock()
+
+	packets := make([]gopacket.Packet, len(s.packetList))
+	copy(packets, s.packetList)
+	return packets
 }

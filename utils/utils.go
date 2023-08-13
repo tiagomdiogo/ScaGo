@@ -58,13 +58,28 @@ func ParseMACGen(macStr string) (string, error) {
 	return macStr, nil
 }
 
-func GetMACAddress(ifaceName string) (string, error) {
+func MacByInt(ifaceName string) (string, error) {
 	iface, err := net.InterfaceByName(ifaceName)
 	if err != nil {
 		return "", err
 	}
 
 	return iface.HardwareAddr.String(), nil
+}
+
+func IPbyInt(interfaceName string) (string, error) {
+	iface, err := net.InterfaceByName(interfaceName)
+	if err != nil {
+		return "", err
+	}
+	addrs, err := iface.Addrs()
+	if err != nil {
+		return "", err
+	}
+	if len(addrs) > 0 {
+		return addrs[0].(*net.IPNet).IP.String(), nil
+	}
+	return "", fmt.Errorf("No IP found for interface: %s", interfaceName)
 }
 
 func RandomPort() string {

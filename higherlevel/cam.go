@@ -6,7 +6,7 @@ import (
 
 	craft "github.com/tiagomdiogo/GoPpy/packet"
 	communication "github.com/tiagomdiogo/GoPpy/supersocket"
-	utils "github.com/tiagomdiogo/GoPpy/utils"
+	"github.com/tiagomdiogo/GoPpy/utils"
 )
 
 func Cam(iface, dstMAC string, packetCount int) {
@@ -32,8 +32,11 @@ func Cam(iface, dstMAC string, packetCount int) {
 			etherLayer := craft.EthernetLayer()
 			etherLayer.SetSrcMAC(randomSrcMAC)
 			etherLayer.SetDstMAC(dstMAC)
+			ipLayer := craft.IPv4Layer()
+			ipLayer.SetSrcIP("")
+			ipLayer.SetDstIP("")
 
-			packets[i], err = craft.CraftPacket(etherLayer.Layer())
+			packets[i], err = craft.CraftPacket(etherLayer.Layer(), ipLayer.Layer())
 			if err != nil {
 				fmt.Println("Error crafting Ethernet packet:", err)
 				return
