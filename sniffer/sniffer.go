@@ -31,7 +31,7 @@ func NewSniffer(dev string, filter string, packetLimit int) (*Sniffer, error) {
 	}, nil
 }
 
-func (s *Sniffer) Start() {
+func (s *Sniffer) Start() *gopacket.PacketSource {
 	packetSource := gopacket.NewPacketSource(s.handle, s.handle.LinkType())
 
 	for packet := range packetSource.Packets() {
@@ -41,6 +41,7 @@ func (s *Sniffer) Start() {
 		}
 		s.packetLock.Unlock()
 	}
+	return packetSource
 }
 
 func (s *Sniffer) Stop() {

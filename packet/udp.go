@@ -13,7 +13,7 @@ type UDP struct {
 	layer *golayers.UDP
 }
 
-func UPDLayer() *UDP {
+func UDPLayer() *UDP {
 	return &UDP{
 		layer: &golayers.UDP{},
 	}
