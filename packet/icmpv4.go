@@ -11,7 +11,7 @@ type ICMPv4 struct {
 	layer *golayers.ICMPv4
 }
 
-func NewICMPv4() *ICMPv4 {
+func ICMPv4Layer() *ICMPv4 {
 	return &ICMPv4{
 		layer: &golayers.ICMPv4{},
 	}

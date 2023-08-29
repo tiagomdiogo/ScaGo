@@ -11,14 +11,10 @@ import (
 )
 
 func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string, isReply bool) (*layers.ARP, error) {
-	srcIP, err := utils.ParseIPGen(srcIPStr)
-	if err != nil {
-		return nil, err
-	}
-	dstIP, err := utils.ParseIPGen(dstIPStr)
-	if err != nil {
-		return nil, err
-	}
+	srcIP := utils.ParseIPGen(srcIPStr)
+
+	dstIP := utils.ParseIPGen(dstIPStr)
+
 	srcMAC, err := utils.ParseMACGen(srcMACStr)
 	if err != nil {
 		return nil, err

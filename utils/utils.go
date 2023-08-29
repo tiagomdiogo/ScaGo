@@ -12,10 +12,10 @@ import (
 )
 
 // Function to generate a random IP address within a specified CIDR block
-func RandomIP(network string) (string, error) {
+func RandomIP(network string) string {
 	ip, ipNet, err := net.ParseCIDR(network)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse network: %w", err)
+		return ""
 	}
 
 	for i := 0; i < len(ip); i++ {
@@ -26,15 +26,15 @@ func RandomIP(network string) (string, error) {
 		ip[1] = byte(rand.Intn(255))
 		ip[2] = byte(rand.Intn(255))
 		ip[3] = byte(rand.Intn(255))
-		return ip.String(), nil
+		return ip.String()
 	} else if ip := ip.To16(); ip != nil {
 		for i := 8; i < 16; i++ {
 			ip[i] = byte(rand.Intn(255))
 		}
-		return ip.String(), nil
+		return ip.String()
 	}
 
-	return "", errors.New("could not generate random IP")
+	return ""
 }
 
 // Function to generate a random MAC address
@@ -42,12 +42,12 @@ func RandomMAC() string {
 	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256))
 }
 
-func ParseIPGen(ipStr string) (string, error) {
+func ParseIPGen(ipStr string) string {
 	if ipStr == "" || strings.Contains(ipStr, "/") {
 		// Generate a random IP if no specific IP is provided or if the provided string is a network
 		return RandomIP(ipStr)
 	}
-	return ipStr, nil
+	return ipStr
 }
 
 func ParseMACGen(macStr string) (string, error) {

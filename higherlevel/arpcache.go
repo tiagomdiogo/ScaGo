@@ -17,10 +17,7 @@ func ARPScan(iface string, targetIP string) (string, error) {
 	}
 
 	// Get IP address of interface
-	srcIP, err := utils.ParseIPGen(iface)
-	if err != nil {
-		return "", err
-	}
+	srcIP := utils.ParseIPGen(iface)
 
 	// Create a new SuperSocket
 	ss, err := supersocket.NewSuperSocket(iface, "")

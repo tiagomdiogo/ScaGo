@@ -9,14 +9,8 @@ import (
 
 func CraftIPPacket(srcIPStr, dstIPStr string) (*layers.IPv4, error) {
 
-	srcIP, err := utils.ParseIPGen(srcIPStr)
-	if err != nil {
-		return nil, err
-	}
-	dstIP, err := utils.ParseIPGen(dstIPStr)
-	if err != nil {
-		return nil, err
-	}
+	srcIP := utils.ParseIPGen(srcIPStr)
+	dstIP := utils.ParseIPGen(dstIPStr)
 
 	srcIPaux := net.ParseIP(srcIP)
 	dstIPaux := net.ParseIP(dstIP)
