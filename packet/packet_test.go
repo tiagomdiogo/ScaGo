@@ -145,9 +145,8 @@ func TestCraftARPPacketRequest(t *testing.T) {
 	dstMAC := "06:17:7f:2c:20:20"
 	srcIP := "192.168.1.1"
 	dstIP := "192.168.1.2"
-	isReply := false
 
-	arpLayer, err := CraftARPPacket(srcIP, dstIP, srcMAC, dstMAC, isReply)
+	arpLayer, err := CraftARPPacket(srcIP, dstIP, srcMAC, dstMAC, false)
 	if err != nil {
 		t.Fatalf("unexpected error crafting ARP packet: %v", err)
 	}
@@ -197,9 +196,8 @@ func TestCraftARPPacketReply(t *testing.T) {
 	dstMAC := "06:17:7f:2c:20:20"
 	srcIP := "192.168.1.1"
 	dstIP := "192.168.1.2"
-	isReply := true
 
-	arpLayer, err := CraftARPPacket(srcIP, dstIP, srcMAC, dstMAC, isReply)
+	arpLayer, err := CraftARPPacket(srcIP, dstIP, srcMAC, dstMAC, true)
 	if err != nil {
 		t.Fatalf("unexpected error crafting ARP packet: %v", err)
 	}

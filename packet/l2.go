@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	utils "github.com/tiagomdiogo/GoPpy/utils"
+	"github.com/tiagomdiogo/GoPpy/utils"
 )
 
 func CraftARPPacket(srcIPStr, dstIPStr, srcMACStr, dstMACStr string, isReply bool) (*layers.ARP, error) {
@@ -130,7 +130,7 @@ func CraftDHCPPacket(srcMACStr, dhcpType string) (*layers.Ethernet, *layers.IPv4
 	case "ack":
 		msgType = layers.DHCPMsgTypeAck
 	default:
-		return nil, nil, nil, nil, nil, fmt.Errorf("Unknown DHCP message type: %s", dhcpType)
+		return nil, nil, nil, nil, nil, fmt.Errorf("unknown DHCP message type: %s", dhcpType)
 	}
 
 	// DHCP Options

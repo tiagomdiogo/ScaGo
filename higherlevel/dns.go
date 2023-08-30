@@ -13,7 +13,7 @@ func DNSSpoofing(srcIP, dstIP, srcPort, dstPort, iface, queryDomain, answerIP st
 	// Open a live packet capture
 	SuperS, err := supersocket.NewSuperSocket(iface, "")
 	if err != nil {
-		return fmt.Errorf("Failed to initialize SuperSocket: %v", err)
+		return fmt.Errorf("failed to initialize SuperSocket: %v", err)
 	}
 	defer SuperS.Close()
 
@@ -21,7 +21,7 @@ func DNSSpoofing(srcIP, dstIP, srcPort, dstPort, iface, queryDomain, answerIP st
 		// Receive a packet
 		packet, err := SuperS.Recv()
 		if err != nil {
-			return fmt.Errorf("Failed to receive packet: %v", err)
+			return fmt.Errorf("failed to receive packet: %v", err)
 		}
 
 		dnsLayer := packet.Layer(layers.LayerTypeDNS)
@@ -59,7 +59,7 @@ func DNSSpoofing(srcIP, dstIP, srcPort, dstPort, iface, queryDomain, answerIP st
 				// Send the spoofed response
 				err = SuperS.Send(dnsResponse)
 				if err != nil {
-					return fmt.Errorf("Failed to send packet: %v", err)
+					return fmt.Errorf("failed to send packet: %v", err)
 				}
 
 				return nil

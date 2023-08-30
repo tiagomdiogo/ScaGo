@@ -53,7 +53,7 @@ func (stp *STP) SetBridgeID(bridgeID uint16) {
 	stp.layers.BridgeID.SysID = bridgeID
 }
 
-// set Bridge Mac from a string
+// SetBridgeMacStr set Bridge Mac from a string
 func (stp *STP) SetBridgeMacStr(bridgeMac string) {
 	hwAddr, err := net.ParseMAC(bridgeMac)
 	if err != nil {
@@ -62,7 +62,7 @@ func (stp *STP) SetBridgeMacStr(bridgeMac string) {
 	copy(stp.layers.BridgeID.HwAddr, hwAddr)
 }
 
-// set Root Mac from a string
+// SetRootBridgeMacStr set Root Mac from a string
 func (stp *STP) SetRootBridgeMacStr(rootMac string) {
 	hwAddr, err := net.ParseMAC(rootMac)
 	if err != nil {

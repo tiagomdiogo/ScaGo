@@ -1,7 +1,6 @@
 package packet
 
 import (
-	"errors"
 	"net"
 
 	golayers "github.com/google/gopacket/layers"
@@ -22,40 +21,40 @@ func ARPLayer() *ARP {
 	}
 }
 
-func (a *ARP) SetSrcMac(address string) error {
+func (a *ARP) SetSrcMac(address string) {
 	hwAddr, err := net.ParseMAC(address)
 	if err != nil {
-		return errors.New("invalid source hardware address")
+		return
 	}
 	copy(a.layer.SourceHwAddress, hwAddr)
-	return nil
+	return
 }
 
-func (a *ARP) SetDstMac(address string) error {
+func (a *ARP) SetDstMac(address string) {
 	hwAddr, err := net.ParseMAC(address)
 	if err != nil {
-		return errors.New("invalid destination hardware address")
+		return
 	}
 	copy(a.layer.DstHwAddress, hwAddr)
-	return nil
+	return
 }
 
-func (a *ARP) SetSrcIP(ip string) error {
+func (a *ARP) SetSrcIP(ip string) {
 	protAddr := net.ParseIP(ip)
 	if protAddr == nil {
-		return errors.New("invalid source protocol address")
+		return
 	}
 	copy(a.layer.SourceProtAddress, protAddr.To4())
-	return nil
+	return
 }
 
-func (a *ARP) SetDstIP(ip string) error {
+func (a *ARP) SetDstIP(ip string) {
 	protAddr := net.ParseIP(ip)
 	if protAddr == nil {
-		return errors.New("invalid destination protocol address")
+		return
 	}
 	copy(a.layer.DstProtAddress, protAddr.To4())
-	return nil
+	return
 }
 
 func (a *ARP) SetReply() {

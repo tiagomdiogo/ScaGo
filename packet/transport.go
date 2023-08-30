@@ -46,7 +46,7 @@ func CraftTCPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr, pack
 	tcpLayer.SetNetworkLayerForChecksum(ipLayer)
 
 	// Add payload to the TCP layer
-	payload := gopacket.Payload([]byte(payloadStr))
+	payload := gopacket.Payload(payloadStr)
 
 	return ipLayer, tcpLayer, payload, nil
 }
@@ -81,7 +81,7 @@ func CraftUDPPacket(srcIPStr, dstIPStr, srcPortStr, dstPortStr, payloadStr strin
 	ipLayer.Protocol = ipProtocol
 
 	// Add payload to the UDP layer
-	payload := gopacket.Payload([]byte(payloadStr))
+	payload := gopacket.Payload(payloadStr)
 	udpLayer.Length = uint16(len(payloadStr) + 8)
 
 	return ipLayer, udpLayer, payload, nil

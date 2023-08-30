@@ -4,7 +4,7 @@ import (
 	"net"
 
 	"github.com/google/gopacket/layers"
-	utils "github.com/tiagomdiogo/GoPpy/utils"
+	"github.com/tiagomdiogo/GoPpy/utils"
 )
 
 func CraftIPPacket(srcIPStr, dstIPStr string) (*layers.IPv4, error) {

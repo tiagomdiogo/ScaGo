@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// Function to generate a random IP address within a specified CIDR block
+// RandomIP Function to generate a random IP address within a specified CIDR block
 func RandomIP(network string) string {
 	ip, ipNet, err := net.ParseCIDR(network)
 	if err != nil {
@@ -37,7 +37,7 @@ func RandomIP(network string) string {
 	return ""
 }
 
-// Function to generate a random MAC address
+// RandomMAC Function to generate a random MAC address
 func RandomMAC() string {
 	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256))
 }
@@ -79,7 +79,7 @@ func IPbyInt(interfaceName string) (string, error) {
 	if len(addrs) > 0 {
 		return addrs[0].(*net.IPNet).IP.String(), nil
 	}
-	return "", fmt.Errorf("No IP found for interface: %s", interfaceName)
+	return "", fmt.Errorf("no IP found for interface: %s", interfaceName)
 }
 
 func RandomPort() string {
