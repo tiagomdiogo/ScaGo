@@ -10,7 +10,7 @@ import (
 	"github.com/tiagomdiogo/GoPpy/utils"
 )
 
-func Cam(iface, dstMAC string, packetCount int) {
+func Cam(iface string, packetCount int) {
 
 	ss, err := communication.NewSuperSocket(iface, "")
 	if err != nil {
@@ -25,15 +25,15 @@ func Cam(iface, dstMAC string, packetCount int) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			randomSrcMAC := utils.ParseMACGen("")
-
+			randomSrcMAC := utils.ParseMACGen()
+			randomDstMac := utils.ParseMACGen()
 			etherLayer := craft.EthernetLayer()
 			etherLayer.SetSrcMAC(randomSrcMAC)
-			etherLayer.SetDstMAC(dstMAC)
+			etherLayer.SetDstMAC(randomDstMac)
 			etherLayer.SetEthernetType(golayers.EthernetTypeIPv4)
 			ipLayer := craft.IPv4Layer()
-			ipLayer.SetSrcIP(utils.ParseIPGen(""))
-			ipLayer.SetDstIP(utils.ParseIPGen(""))
+			ipLayer.SetSrcIP(utils.ParseIPGen())
+			ipLayer.SetDstIP(utils.ParseIPGen())
 
 			packets[i], err = craft.CraftPacket(etherLayer.Layer(), ipLayer.Layer())
 			if err != nil {
