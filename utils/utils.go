@@ -8,54 +8,42 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
-	"strings"
+	"time"
 )
 
-// RandomIP Function to generate a random IP address within a specified CIDR block
-func RandomIP(network string) string {
-	ip, ipNet, err := net.ParseCIDR(network)
-	if err != nil {
-		return ""
-	}
+func ParseIPGen(cidr ...string) string {
+	rand.Seed(time.Now().UnixNano())
 
-	for i := 0; i < len(ip); i++ {
-		ip[i] = ip[i] | (ipNet.IP[i] &^ ipNet.Mask[i])
-	}
-
-	if ip := ip.To4(); ip != nil {
-		ip[1] = byte(rand.Intn(255))
-		ip[2] = byte(rand.Intn(255))
-		ip[3] = byte(rand.Intn(255))
-		return ip.String()
-	} else if ip := ip.To16(); ip != nil {
-		for i := 8; i < 16; i++ {
-			ip[i] = byte(rand.Intn(255))
+	if len(cidr) > 0 {
+		_, network, err := net.ParseCIDR(cidr[0])
+		if err != nil {
+			return ""
 		}
+
+		// Convert IP network to bytes
+		ip := network.IP.To4()
+		mask := network.Mask
+
+		// Randomize the host part
+		for i := 0; i < len(mask); i++ {
+			ip[i] |= (mask[i] ^ 0xFF) & byte(rand.Intn(256))
+		}
+
 		return ip.String()
 	}
 
-	return ""
+	// Generate a completely random IP
+	ip := make(net.IP, 4)
+	rand.Read(ip)
+	return ip.String()
 }
 
-// RandomMAC Function to generate a random MAC address
-func RandomMAC() string {
+func ParseMACGen(cidr ...string) string {
+	if len(cidr) > 0 {
+		return cidr[0]
+	}
 	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256))
-}
 
-func ParseIPGen(ipStr string) string {
-	if ipStr == "" || strings.Contains(ipStr, "/") {
-		// Generate a random IP if no specific IP is provided or if the provided string is a network
-		return RandomIP(ipStr)
-	}
-	return ipStr
-}
-
-func ParseMACGen(macStr string) (string, error) {
-	if macStr == "" || strings.Contains(macStr, "/") {
-		// Generate a random MAC if no specific MAC is provided or if the provided string is a network
-		return RandomMAC(), nil
-	}
-	return macStr, nil
 }
 
 func MacByInt(ifaceName string) (string, error) {

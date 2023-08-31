@@ -25,11 +25,8 @@ func Cam(iface, dstMAC string, packetCount int) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			randomSrcMAC, err := utils.ParseMACGen("")
-			if err != nil {
-				fmt.Println("Error crafting Ethernet packet:", err)
-				return
-			}
+			randomSrcMAC := utils.ParseMACGen("")
+
 			etherLayer := craft.EthernetLayer()
 			etherLayer.SetSrcMAC(randomSrcMAC)
 			etherLayer.SetDstMAC(dstMAC)
