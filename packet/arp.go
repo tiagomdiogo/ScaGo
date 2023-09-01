@@ -14,7 +14,7 @@ func ARPLayer() *ARP {
 	return &ARP{
 		layer: &golayers.ARP{
 			AddrType:        golayers.LinkTypeEthernet,
-			Protocol:        golayers.EthernetTypeARP,
+			Protocol:        golayers.EthernetTypeIPv4,
 			HwAddressSize:   6,
 			ProtAddressSize: 4,
 		},
@@ -26,7 +26,9 @@ func (a *ARP) SetSrcMac(address string) {
 	if err != nil {
 		return
 	}
-	copy(a.layer.SourceHwAddress, hwAddr)
+	srcHwAddress := make([]byte, 6)
+	copy(srcHwAddress, hwAddr)
+	a.layer.SourceHwAddress = srcHwAddress
 	return
 }
 
@@ -35,7 +37,9 @@ func (a *ARP) SetDstMac(address string) {
 	if err != nil {
 		return
 	}
-	copy(a.layer.DstHwAddress, hwAddr)
+	dstHwAddress := make([]byte, 6)
+	copy(dstHwAddress, hwAddr)
+	a.layer.DstHwAddress = dstHwAddress
 	return
 }
 
@@ -44,7 +48,10 @@ func (a *ARP) SetSrcIP(ip string) {
 	if protAddr == nil {
 		return
 	}
-	copy(a.layer.SourceProtAddress, protAddr.To4())
+
+	srcIP := make([]byte, 4)
+	copy(srcIP, protAddr.To4())
+	a.layer.SourceProtAddress = srcIP
 	return
 }
 
@@ -53,7 +60,9 @@ func (a *ARP) SetDstIP(ip string) {
 	if protAddr == nil {
 		return
 	}
-	copy(a.layer.DstProtAddress, protAddr.To4())
+	dstIP := make([]byte, 4)
+	copy(dstIP, protAddr.To4())
+	a.layer.DstProtAddress = dstIP
 	return
 }
 
