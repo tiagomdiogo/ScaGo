@@ -14,7 +14,7 @@ func ARPLayer() *ARP {
 	return &ARP{
 		layer: &golayers.ARP{
 			AddrType:        golayers.LinkTypeEthernet,
-			Protocol:        golayers.EthernetTypeIPv4,
+			Protocol:        golayers.EthernetTypeARP,
 			HwAddressSize:   6,
 			ProtAddressSize: 4,
 		},

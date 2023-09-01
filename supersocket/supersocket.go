@@ -11,6 +11,7 @@ import (
 
 type SuperSocket struct {
 	handle *pcap.Handle
+	iface  string
 }
 
 func NewSuperSocket(device string, bpfFilter string) (*SuperSocket, error) {
@@ -29,7 +30,8 @@ func NewSuperSocket(device string, bpfFilter string) (*SuperSocket, error) {
 		}
 	}
 
-	return &SuperSocket{handle: handle}, nil
+	return &SuperSocket{handle: handle,
+		iface: device}, nil
 }
 
 func (ss *SuperSocket) Close() {
