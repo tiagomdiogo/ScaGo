@@ -113,7 +113,6 @@ func CamBatch(iface string, packetCount int) {
 }
 
 func CamStream(iface string, packetCount int) {
-
 	ss, err := communication.NewSuperSocket(iface, "")
 	if err != nil {
 		fmt.Println("Error creating SuperSocket:", err)
@@ -121,11 +120,17 @@ func CamStream(iface string, packetCount int) {
 	}
 
 	var wg sync.WaitGroup
+	semaphore := make(chan struct{}, 50) // Limit to 50 concurrent goroutines
 
 	for i := 0; i < packetCount; i++ {
 		wg.Add(1)
 		go func(i int) {
-			defer wg.Done()
+			semaphore <- struct{}{} // Acquire a slot in the semaphore channel
+			defer func() {
+				<-semaphore // Release the slot
+				wg.Done()
+			}()
+
 			randomSrcMAC := utils.ParseMACGen()
 			randomDstMAC := utils.ParseMACGen()
 			etherLayer := craft.EthernetLayer()
@@ -144,7 +149,7 @@ func CamStream(iface string, packetCount int) {
 
 			fmt.Println("Produced packet number:", i)
 
-			// Sending individual packet right after creation
+			// Send packet
 			err = ss.Send(packet)
 			if err != nil {
 				fmt.Println("Error sending packet:", err)
@@ -154,4 +159,5 @@ func CamStream(iface string, packetCount int) {
 	}
 
 	wg.Wait()
+	close(semaphore)
 }
