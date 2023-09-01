@@ -58,19 +58,14 @@ func dhcpResponder(iface string) {
 
 func sendDHCPOffer(request *layers.DHCPv4, iface string, socketint *supersocket.SuperSocket) {
 	//ethlayer
-	srcMac, err := utils.MacByInt(iface)
-	if err != nil {
-		fmt.Println("Error when getting Mac from provided interface")
-	}
+	srcMac := utils.MacByInt(iface)
+
 	ethLayer := packet.EthernetLayer()
 	ethLayer.SetSrcMAC(srcMac)
 	ethLayer.SetDstMAC(request.ClientHWAddr.String())
 
 	//iplayer
-	srcIP, err := utils.IPbyInt(iface)
-	if err != nil {
-		fmt.Println("Error when getting IP from provided interface")
-	}
+	srcIP := utils.IPbyInt(iface)
 	ipv4Layer := packet.IPv4Layer()
 	ipv4Layer.SetSrcIP(srcIP)
 	ipv4Layer.SetDstIP(request.ClientIP.String())
@@ -82,25 +77,23 @@ func sendDHCPOffer(request *layers.DHCPv4, iface string, socketint *supersocket.
 
 	packetToSend, err := packet.CraftPacket(ethLayer.Layer(), ipv4Layer.Layer(), dhcpLayer.Layer())
 
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	socketint.Send(packetToSend)
 }
 
 func sendDHCPAck(request *layers.DHCPv4, iface string, socketint *supersocket.SuperSocket) {
 
 	//ethlayer
-	srcMac, err := utils.MacByInt(iface)
-	if err != nil {
-		fmt.Println("Error when getting Mac from provided interface")
-	}
+	srcMac := utils.MacByInt(iface)
 	ethLayer := packet.EthernetLayer()
 	ethLayer.SetSrcMAC(srcMac)
 	ethLayer.SetDstMAC(request.ClientHWAddr.String())
 
 	//iplayer
-	srcIP, err := utils.IPbyInt(iface)
-	if err != nil {
-		fmt.Println("Error when getting IP from provided interface")
-	}
+	srcIP := utils.IPbyInt(iface)
 	ipv4Layer := packet.IPv4Layer()
 	ipv4Layer.SetSrcIP(srcIP)
 	ipv4Layer.SetDstIP(request.ClientIP.String())
@@ -112,5 +105,8 @@ func sendDHCPAck(request *layers.DHCPv4, iface string, socketint *supersocket.Su
 
 	packetToSend, err := packet.CraftPacket(ethLayer.Layer(), ipv4Layer.Layer(), dhcpLayer.Layer())
 
+	if err != nil {
+		log.Fatal(err)
+	}
 	socketint.Send(packetToSend)
 }

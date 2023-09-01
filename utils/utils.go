@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"net"
 	"os/exec"
@@ -46,28 +47,28 @@ func ParseMACGen(cidr ...string) string {
 
 }
 
-func MacByInt(ifaceName string) (string, error) {
+func MacByInt(ifaceName string) string {
 	iface, err := net.InterfaceByName(ifaceName)
 	if err != nil {
-		return "", err
+		log.Fatal(err)
 	}
 
-	return iface.HardwareAddr.String(), nil
+	return iface.HardwareAddr.String()
 }
 
-func IPbyInt(interfaceName string) (string, error) {
+func IPbyInt(interfaceName string) string {
 	iface, err := net.InterfaceByName(interfaceName)
 	if err != nil {
-		return "", err
+		log.Fatal(err)
 	}
 	addrs, err := iface.Addrs()
 	if err != nil {
-		return "", err
+		log.Fatal(err)
 	}
 	if len(addrs) > 0 {
-		return addrs[0].(*net.IPNet).IP.String(), nil
+		return addrs[0].(*net.IPNet).IP.String()
 	}
-	return "", fmt.Errorf("no IP found for interface: %s", interfaceName)
+	return ""
 }
 
 func RandomPort() string {

