@@ -15,10 +15,8 @@ func Dot3Layer() *Dot3 {
 	return &Dot3{
 		layer: &protocols.Dot3{
 			// Initialize the necessary fields
-			DstMAC:  net.HardwareAddr{},
-			SrcMAC:  net.HardwareAddr{},
-			Padding: nil,
-			Payload: nil,
+			DstMAC: net.HardwareAddr{},
+			SrcMAC: net.HardwareAddr{},
 		},
 	}
 }

