@@ -18,13 +18,13 @@ func STPLayer() *STP {
 			TC:         false,
 			TCA:        false,
 			RouteID: layers.STPSwitchID{
-				Priority: 0,
+				Priority: 32768,
 				SysID:    0,
 				HwAddr:   nil,
 			},
 			Cost: 0,
 			BridgeID: layers.STPSwitchID{
-				Priority: 0,
+				Priority: 32768,
 				SysID:    0,
 				HwAddr:   nil,
 			},
@@ -59,7 +59,7 @@ func (stp *STP) SetBridgeMacStr(bridgeMac string) {
 	if err != nil {
 		panic(err)
 	}
-	copy(stp.layers.BridgeID.HwAddr, hwAddr)
+	stp.layers.BridgeID.HwAddr = hwAddr
 }
 
 // SetRootBridgeMacStr set Root Mac from a string
@@ -68,7 +68,7 @@ func (stp *STP) SetRootBridgeMacStr(rootMac string) {
 	if err != nil {
 		panic(err)
 	}
-	copy(stp.layers.RouteID.HwAddr, hwAddr)
+	stp.layers.RouteID.HwAddr = hwAddr
 }
 func (stp *STP) Layer() *layers.STP {
 	return stp.layers

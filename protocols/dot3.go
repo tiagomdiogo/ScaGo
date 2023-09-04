@@ -31,7 +31,7 @@ func (d *Dot3) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOp
 
 	// Handle options
 	if opts.FixLengths {
-		d.Length = uint16(len(b.Bytes()))
+		d.Length = uint16(len(b.Bytes())) - uint16(length)
 	}
 
 	binary.BigEndian.PutUint16(buf[12:14], d.Length)
@@ -54,7 +54,7 @@ func (d *Dot3) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 }
 
 func (d *Dot3) NextLayerType() gopacket.LayerType {
-	return gopacket.LayerTypePayload
+	return layers.LayerTypeLLC
 }
 
 func (d *Dot3) CanDecode() gopacket.LayerClass {
@@ -66,5 +66,5 @@ func decodeDot3(data []byte, p gopacket.PacketBuilder) error {
 	d.DecodeFromBytes(data, p)
 	p.AddLayer(d)
 
-	return p.NextDecoder(gopacket.LayerTypePayload)
+	return p.NextDecoder(d.NextLayerType())
 }

@@ -12,9 +12,9 @@ func LLCLayer() *LLC {
 	return &LLC{
 		layer: &layers.LLC{
 			// Initialize the necessary fields
-			DSAP:    0,
-			SSAP:    0,
-			Control: 0,
+			DSAP:    0x42,
+			SSAP:    0x42,
+			Control: 3,
 		},
 	}
 }
