@@ -8,6 +8,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func StpRootBridgeMitM(iface1 string) {
@@ -50,7 +51,8 @@ func StpRootBridgeMitM(iface1 string) {
 			"bridgeid":  stpLayer.RouteID.SysID,
 		}
 
-		go stpRootBridgeHijack(iface1, params)
+		stpRootBridgeHijack(iface1, params)
+		time.Sleep(10 * time.Second)
 	}
 }
 
@@ -113,6 +115,8 @@ func stpRootBridgeHijack(iface string, params map[string]interface{}) {
 				log.Fatal(err)
 			}
 			ss.Send(finalAck)
+			fmt.Println("Sent the topology acknowledge")
+			return
 		}
 	}
 }
