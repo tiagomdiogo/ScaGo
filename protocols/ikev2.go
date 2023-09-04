@@ -1,4 +1,4 @@
-package packet
+package protocols
 
 var IKEv2AttributeTypes = map[int]struct {
 	Name       string

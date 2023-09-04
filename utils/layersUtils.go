@@ -15,3 +15,14 @@ func GetARPLayer(packet gopacket.Packet) *layers.ARP {
 		return nil
 	}
 }
+
+func GetSTPLayer(packet gopacket.Packet) *layers.STP {
+	// Get the ARP layer from this packet
+	if stpLayer := packet.Layer(layers.LayerTypeSTP); stpLayer != nil {
+		// The packet has an ARP layer, return it.
+		return stpLayer.(*layers.STP)
+	} else {
+		// The packet does not have an ARP layer.
+		return nil
+	}
+}
