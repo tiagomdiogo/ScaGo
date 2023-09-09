@@ -77,3 +77,7 @@ func (ss *SuperSocket) SendMultiplePackets(packets [][]byte, maxConcurrentSends 
 
 	return nil
 }
+
+func (ss *SuperSocket) GetHandle() *pcap.Handle {
+	return ss.handle
+}
