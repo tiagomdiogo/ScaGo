@@ -12,14 +12,16 @@ type DNS struct {
 func DNSLayer() *DNS {
 	return &DNS{
 		layer: &golayers.DNS{
-			ID: 0xAAAA,
-			QR: false,
+			ID:      0xAAAA,
+			QR:      false,
+			QDCount: 0,
+			ANCount: 0,
 		},
 	}
 }
 
 func (dns *DNS) AddQuestion(name string) {
-	dns.layer.QDCount = 1
+	dns.layer.QDCount += 1
 	dns.layer.Questions = append(dns.layer.Questions, golayers.DNSQuestion{
 		Name:  []byte(name),
 		Type:  golayers.DNSTypeA,
@@ -29,7 +31,7 @@ func (dns *DNS) AddQuestion(name string) {
 
 func (dns *DNS) AddAnswer(name string, ipStr string) {
 	dns.layer.QR = true
-	dns.layer.ANCount = 1
+	dns.layer.ANCount += 1
 
 	ip := net.ParseIP(ipStr)
 
