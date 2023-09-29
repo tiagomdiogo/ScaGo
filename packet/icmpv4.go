@@ -1,9 +1,6 @@
 package packet
 
 import (
-	"errors"
-	"strconv"
-
 	golayers "github.com/google/gopacket/layers"
 )
 
@@ -13,26 +10,23 @@ type ICMPv4 struct {
 
 func ICMPv4Layer() *ICMPv4 {
 	return &ICMPv4{
-		layer: &golayers.ICMPv4{},
+		layer: &golayers.ICMPv4{
+			TypeCode: golayers.ICMPv4TypeEchoRequest,
+		},
 	}
 }
 
-func (icmp *ICMPv4) SetType(typeStr string) error {
-	typ, err := strconv.Atoi(typeStr)
-	if err != nil || typ < 0 || typ > 255 {
-		return errors.New("invalid ICMPv4 type")
-	}
-	icmp.layer.TypeCode = golayers.ICMPv4TypeCode(uint16(typ)<<8 | uint16(icmp.layer.TypeCode))
-	return nil
+func (icmp *ICMPv4) SetTypeCode(TypeCode golayers.ICMPv4TypeCode) {
+	icmp.layer.TypeCode = TypeCode
+
 }
 
-func (icmp *ICMPv4) SetCode(codeStr string) error {
-	code, err := strconv.Atoi(codeStr)
-	if err != nil || code < 0 || code > 255 {
-		return errors.New("invalid ICMPv4 code")
-	}
-	icmp.layer.TypeCode = golayers.ICMPv4TypeCode(uint16(icmp.layer.TypeCode)&0xFF00 | uint16(code))
-	return nil
+func (icmp *ICMPv4) SetChecksum(CheckSum uint16) {
+	icmp.layer.Checksum = CheckSum
+}
+
+func (icmp *ICMPv4) SetID(ID uint16) {
+	icmp.layer.Id = ID
 }
 
 func (icmp *ICMPv4) Layer() *golayers.ICMPv4 {
