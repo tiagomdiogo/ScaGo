@@ -71,12 +71,17 @@ func (d *DHCP) SetMsgType(msgType string) {
 		msg = golayers.DHCPMsgTypeRequest
 	case "ack":
 		msg = golayers.DHCPMsgTypeAck
-		d.layer.Options = append(d.layer.Options, golayers.DHCPOption{
-			Type:   golayers.DHCPOptMessageType,
-			Length: 1,
-			Data:   []byte{byte(msg)},
-		})
+
 	}
+	d.layer.Options = append(d.layer.Options, golayers.DHCPOption{
+		Type:   golayers.DHCPOptMessageType,
+		Length: 1,
+		Data:   []byte{byte(msg)},
+	})
+}
+
+func (d *DHCP) SetType(linkType golayers.LinkType) {
+	d.layer.HardwareType = linkType
 }
 
 func (d *DHCP) Layer() *golayers.DHCPv4 {
