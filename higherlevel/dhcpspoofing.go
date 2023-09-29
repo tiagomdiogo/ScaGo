@@ -71,7 +71,7 @@ func sendDHCPOffer(request *layers.DHCPv4, iface string, socketint *supersocket.
 	ipv4Layer.SetDstIP(request.ClientIP.String())
 
 	//DHCP Layer
-	dhcpLayer := packet.NewDHCP()
+	dhcpLayer := packet.DHCPLayer()
 	dhcpLayer.SetReply()
 	dhcpLayer.SetMsgType("offer")
 
@@ -99,7 +99,7 @@ func sendDHCPAck(request *layers.DHCPv4, iface string, socketint *supersocket.Su
 	ipv4Layer.SetDstIP(request.ClientIP.String())
 
 	//DHCP Layer
-	dhcpLayer := packet.NewDHCP()
+	dhcpLayer := packet.DHCPLayer()
 	dhcpLayer.SetReply()
 	dhcpLayer.SetMsgType("ack")
 

@@ -12,7 +12,7 @@ type DHCP struct {
 	layer *golayers.DHCPv4
 }
 
-func NewDHCP() *DHCP {
+func DHCPLayer() *DHCP {
 	return &DHCP{
 		layer: &golayers.DHCPv4{
 			Operation:    golayers.DHCPOpRequest,
@@ -23,16 +23,6 @@ func NewDHCP() *DHCP {
 			Flags:        0x8000,
 		},
 	}
-}
-
-func (d *DHCP) SetSrcMAC(macStr string) error {
-	mac, err := net.ParseMAC(macStr)
-	if err != nil {
-		return errors.New("invalid source MAC address")
-	}
-	//TODO check src Mac
-	d.layer.ClientHWAddr = mac
-	return nil
 }
 
 func (d *DHCP) SetDstMac(macStr string) error {
