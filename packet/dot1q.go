@@ -13,10 +13,10 @@ type Dot1Q struct {
 func Dot1QLayer() *Dot1Q {
 	return &Dot1Q{
 		layer: &golayers.Dot1Q{
-			VLANIdentifier: 1,                         // Default VLAN ID
-			Type:           golayers.EthernetTypeIPv4, // Default Type
-			Priority:       0,                         // Default Priority
-			DropEligible:   false,                     // Default Drop Eligible Indicator
+			VLANIdentifier: 1,                          // Default VLAN ID
+			Type:           golayers.EthernetTypeDot1Q, // Default Type
+			Priority:       0,                          // Default Priority
+			DropEligible:   false,                      // Default Drop Eligible Indicator
 		},
 	}
 }
