@@ -35,8 +35,8 @@ func (dot1q *Dot1Q) SetType(etherType golayers.EthernetType) {
 	dot1q.layer.Type = etherType
 }
 
-// SetPCP Set Priority Code Point (PCP)
-func (dot1q *Dot1Q) SetPCP(pcp uint8) error {
+// SetPriority Set Priority Code Point (PCP)
+func (dot1q *Dot1Q) SetPriority(pcp uint8) error {
 	if pcp > 7 {
 		return errors.New("invalid PCP, must be between 0 and 7")
 	}
