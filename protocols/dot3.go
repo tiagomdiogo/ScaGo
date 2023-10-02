@@ -39,10 +39,6 @@ func (d *Dot3) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOp
 	return nil
 }
 
-func (d *Dot3) LayerPayload() []byte {
-	return d.Payload
-}
-
 func (d *Dot3) LayerType() gopacket.LayerType { return LayerTypeDot3 }
 
 func (d *Dot3) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
