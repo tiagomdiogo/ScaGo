@@ -45,27 +45,20 @@ func Cam(iface string, packetCount int) {
 	}
 
 	wg.Wait()
-
-	// Flood the network with the ARP packets
-	for {
-		fmt.Println("Sending Created packets")
-		err = ss.SendMultiplePackets(packets, 10)
-		if err != nil {
-			fmt.Println("Error sending packets:", err)
-			return
-		}
+	fmt.Println("Sending Created packets")
+	err = ss.SendMultiplePackets(packets, 10)
+	if err != nil {
+		fmt.Println("Error sending packets:", err)
+		return
 	}
 }
 
-func CamBatch(iface string, packetCount int) {
-
-	const batchSize = 1000000
+func CamBatch(iface string, packetCount, batchSize int) {
 	ss, err := communication.NewSuperSocket(iface, "")
 	if err != nil {
 		fmt.Println("Error creating SuperSocket:", err)
 		return
 	}
-
 	var wg sync.WaitGroup
 
 	for start := 0; start < packetCount; start += batchSize {
@@ -99,9 +92,7 @@ func CamBatch(iface string, packetCount int) {
 				fmt.Println("Produced packet number:", i)
 			}(i)
 		}
-
 		wg.Wait()
-
 		// Send this batch of packets
 		fmt.Println("Sending Created packets")
 		err = ss.SendMultiplePackets(packets, 10)
