@@ -18,7 +18,7 @@ func StpRootBridgeMitM2(iface1, iface2 string) {
 		log.Fatal(err)
 	}
 
-	go sniffer.Bridge_and_Sniff(iface1, iface2)
+	go sniffer.BridgeAndSniff(iface1, iface2)
 
 	pkt, err := ss.Recv()
 	if err != nil {

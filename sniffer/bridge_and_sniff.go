@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func Bridge_and_Sniff(iface1, iface2 string) {
+func BridgeAndSniff(iface1, iface2 string) {
 
 	superSocket1, err := supersocket.NewSuperSocket(iface1, "")
 	superSocket2, err := supersocket.NewSuperSocket(iface2, "")
