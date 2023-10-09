@@ -18,7 +18,7 @@ func createSuperSocket(iface string) *supersocket.SuperSocket {
 	return socketInt
 }
 
-func dhcpResponder(iface string) {
+func DhcpResponder(iface string) {
 	newSniffer, err := sniffer.NewSniffer(iface, "udp and port 67", 100)
 	socketint := createSuperSocket(iface)
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-func DoubleTagVlan(iface, dstIP string, vlanOut, vlanIn uint16, pktsize int) {
+func DoubleTagVlan(iface, dstIP string, vlanOut, vlanIn uint16) {
 
 	//Create a supersocket
 	SuperS, err := supersocket.NewSuperSocket(iface, "")

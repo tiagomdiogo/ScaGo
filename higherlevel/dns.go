@@ -8,7 +8,6 @@ import (
 	"log"
 )
 
-// DNSSpoofing todo get IP of the interface
 func DNSSpoofing(srcIP, dstIP, srcPort, dstPort, iface, queryDomain, answerIP string) error {
 	// Open a live packet capture
 	SuperS, err := supersocket.NewSuperSocket(iface, "")

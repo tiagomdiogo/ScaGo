@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func TCPSYNFlood(targetIP, targetPort, payload string, attackDuration int) {
+func TCPSYNFlood(targetIP, targetPort string, attackDuration int) {
 	socket, err := supersocket.NewSuperSocket("eth0", "")
 	if err != nil {
 		log.Fatal(err)

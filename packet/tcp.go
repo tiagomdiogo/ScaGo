@@ -1,7 +1,5 @@
 package packet
 
-//todo add support for IP Layer and parseIP
-
 import (
 	"errors"
 	"strconv"
