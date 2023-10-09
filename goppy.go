@@ -27,6 +27,12 @@ func help() {
 	fmt.Println("To perform this attack type: rootbridge <Interface>")
 	fmt.Println("Root Bridge takeover 2 interfaces - Consists of taking the role of Root bridge with 2 interfaces on a LAN network")
 	fmt.Println("To perform this attack type: rootbridge <Interface1> <Interface2>")
+	fmt.Println("DHCP Spoofing - Consists of sending spoofed responses with malicious configurations")
+	fmt.Println("To perform this attack type: dhcpspoofing <interface>")
+	fmt.Println("Double tag - inject malicious data into a network by encapsulating packets with two VLAN tags, deceiving switches and gaining unauthorized access to traffic on different VLANs.")
+	fmt.Println("To perform this attack type: doubletag <interface> <victimIP> <VlanOut> <vlanIn>")
+	fmt.Println("TCP SYN - Consume server resources by sending SYN requests to make the system unresponsive to legitimate traffic.")
+	fmt.Println("tcpsyn <Target IP> <TargetPort>")
 
 }
 
