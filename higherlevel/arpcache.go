@@ -86,8 +86,6 @@ func ArpMitm(iface, victim1, victim2 string) {
 	macVictim2, err := ARPScan(iface, victim2)
 
 	fmt.Println("[*] Got MAC of the victims")
-	fmt.Println(macVictim1)
-	fmt.Println(macVictim2)
 
 	intMac := utils.MacByInt(iface)
 	arpPacket1, arpPacket2 := CreateFakeArp(victim1, victim2, macVictim1, macVictim2, intMac)
