@@ -21,20 +21,21 @@ func DoubleTagVlan(iface, dstIP string, vlanOut, vlanIn uint16) {
 	ethLayer := craft.EthernetLayer()
 	ethLayer.SetSrcMAC(utils.ParseMACGen())
 	ethLayer.SetDstMAC("ff:ff:ff:ff:ff:ff")
-	ethLayer.SetEthernetType(golayers.EthernetTypeDot1Q)
+	ethLayer.SetEthernetType(golayers.EthernetTypeIPv4)
 
 	//Create Dot1Q Layer
 	dot1qLayer := craft.Dot1QLayer()
-	dot1qLayer.SetVLANIdentifier(vlanOut)
+	dot1qLayer.SetVLANIdentifier(vlanIn)
 
 	//Create another Dot1Q Layer
 	dot1qLayer2 := craft.Dot1QLayer()
-	dot1qLayer2.SetVLANIdentifier(vlanIn)
+	dot1qLayer2.SetVLANIdentifier(vlanOut)
 
 	//Create IP Layer
 	ipLayer := craft.IPv4Layer()
 	ipLayer.SetSrcIP(utils.ParseIPGen("0.0.0.0/0"))
 	ipLayer.SetDstIP(dstIP)
+	ipLayer.SetProtocol(golayers.IPProtocolICMPv4)
 
 	//Create ICMP Layer
 	icmpLayer := craft.ICMPv4Layer()
