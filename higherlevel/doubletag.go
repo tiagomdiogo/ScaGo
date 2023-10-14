@@ -30,6 +30,7 @@ func DoubleTagVlan(iface, dstIP string, vlanOut, vlanIn uint16) {
 	//Create another Dot1Q Layer
 	dot1qLayer2 := craft.Dot1QLayer()
 	dot1qLayer2.SetVLANIdentifier(vlanOut)
+	dot1qLayer2.Layer().Type = golayers.EthernetTypeIPv4
 
 	//Create IP Layer
 	ipLayer := craft.IPv4Layer()
