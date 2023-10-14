@@ -102,7 +102,7 @@ func DNSSpoofing(iface, hosts, fakeIP string) {
 
 			//udpLayer
 			udpToSend := craft.UDPLayer()
-			udpToSend.SetSrcPort(udpLayer.DstPort.String())
+			udpToSend.SetSrcPort("53")
 			udpToSend.SetDstPort(udpLayer.SrcPort.String())
 			udpToSend.Layer().SetNetworkLayerForChecksum(ipToSend.Layer())
 
