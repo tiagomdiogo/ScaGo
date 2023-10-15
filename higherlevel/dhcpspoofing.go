@@ -8,19 +8,36 @@ import (
 	"github.com/tiagomdiogo/GoPpy/supersocket"
 	"github.com/tiagomdiogo/GoPpy/utils"
 	"log"
+	"net"
 )
 
-func createSuperSocket(iface string) *supersocket.SuperSocket {
-	socketInt, err := supersocket.NewSuperSocket(iface, "")
+func generatePool(pool, netmask string) ([]net.IP, error) {
+	ip, ipnet, err := net.ParseCIDR(pool + "/" + netmask)
 	if err != nil {
-		fmt.Println("Error when creating supersocket")
+		return nil, err
 	}
-	return socketInt
+
+	var ips []net.IP
+	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); incIP(ip) {
+		ips = append(ips, append(net.IP(nil), ip...)) // Add a copy of ip to ips
+	}
+	return ips, nil
 }
 
-func DhcpResponder(iface string) {
-	newSniffer, err := sniffer.NewSniffer(iface, "udp and port 67", 100)
-	socketint := createSuperSocket(iface)
+func incIP(ip net.IP) {
+	for j := len(ip) - 1; j >= 0; j-- {
+		ip[j]++
+		if ip[j] > 0 {
+			break
+		}
+	}
+}
+
+func DHCPSpoofing(pool, mask, gateway, iface string) {
+
+	availableIP, err := generatePool(pool, mask)
+	fmt.Println(availableIP)
+	newSniffer, err := sniffer.NewSniffer(iface, "udp and (port 67 or 68)")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,7 +45,6 @@ func DhcpResponder(iface string) {
 	go newSniffer.Start()
 
 	for _, packetAux := range newSniffer.GetPackets() {
-
 		dhcpLayer := packetAux.Layer(layers.LayerTypeDHCPv4)
 		if dhcpLayer != nil {
 			dhcp, _ := dhcpLayer.(*layers.DHCPv4)
@@ -41,19 +57,46 @@ func DhcpResponder(iface string) {
 						break
 					}
 				}
+
 				switch messageType {
 				case layers.DHCPMsgTypeDiscover:
 					fmt.Println("Received a Discover package")
-					sendDHCPOffer(dhcp, iface, socketint)
+					//DHCPOffer(dhcp, iface, iface)
 					fmt.Println("Sent an Offer package")
 				case layers.DHCPMsgTypeRequest:
 					fmt.Println("Received a Request package")
-					sendDHCPAck(dhcp, iface, socketint)
+					//sendDHCPAck(dhcp, iface, iface)
 					fmt.Println("Sent an ACK package")
 				}
 			}
 		}
 	}
+}
+
+func DHCPOffer(dhcp *layers.DHCPv4, iface string, availableIP net.IP, sourceIp net.IP) {
+
+	ethLayer := packet.EthernetLayer()
+	ethLayer.SetSrcMAC(utils.MacByInt(iface))
+	ethLayer.SetDstMAC(dhcp.ClientHWAddr.String())
+	ethLayer.SetEthernetType(layers.EthernetTypeIPv4)
+
+	ipLayer := packet.IPv4Layer()
+	ipLayer.SetSrcIP(sourceIp.String())
+	ipLayer.SetDstIP(availableIP.String())
+	ipLayer.SetProtocol(layers.IPProtocolUDP)
+
+	udpLayer := packet.UDPLayer()
+	udpLayer.SetSrcPort("67")
+	udpLayer.SetDstPort("68")
+	udpLayer.Layer().SetNetworkLayerForChecksum(ipLayer.Layer())
+
+	dhcpLayer := packet.DHCPLayer()
+	dhcpLayer.SetReply()
+	dhcpLayer.SetDstMac(dhcp.ClientHWAddr.String())
+	dhcpLayer.SetDstIP(availableIP.String())
+	dhcpLayer.SetSrcIP(sourceIp.String())
+	dhcpLayer.SetXid(dhcp.Xid)
+
 }
 
 func sendDHCPOffer(request *layers.DHCPv4, iface string, socketint *supersocket.SuperSocket) {

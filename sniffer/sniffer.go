@@ -13,7 +13,7 @@ type Sniffer struct {
 	packetLimit int
 }
 
-func NewSniffer(dev string, filter string, packetLimit int) (*Sniffer, error) {
+func NewSniffer(dev string, filter string) (*Sniffer, error) {
 	handle, err := pcap.OpenLive(dev, 1600, true, pcap.BlockForever)
 	if err != nil {
 		return nil, err
@@ -25,9 +25,8 @@ func NewSniffer(dev string, filter string, packetLimit int) (*Sniffer, error) {
 	}
 
 	return &Sniffer{
-		handle:      handle,
-		packetList:  make([]gopacket.Packet, 0),
-		packetLimit: packetLimit,
+		handle:     handle,
+		packetList: make([]gopacket.Packet, 0),
 	}, nil
 }
 

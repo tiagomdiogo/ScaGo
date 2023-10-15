@@ -34,6 +34,10 @@ func (d *DHCP) SetDstMac(macStr string) error {
 	return nil
 }
 
+func (d *DHCP) SetXid(xid uint32) {
+	d.layer.Xid = xid
+}
+
 func (d *DHCP) SetDstIP(ipStr string) error {
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
