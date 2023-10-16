@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/tiagomdiogo/GoPpy/higherlevel"
+	"github.com/tiagomdiogo/GoPpy/sniffer"
 	"log"
 	"os"
 	"strconv"
@@ -85,13 +86,7 @@ func main() {
 				higherlevel.Cam(cmdWords[1], numberofpacket)
 			}
 		case "dhcpspoofing":
-			if len(cmdWords) < 2 {
-				fmt.Println("To use dhcpspoofing provide the following instructions:")
-				fmt.Println("dhcpspoofing <interface>")
-				continue
-			} else {
-				higherlevel.DhcpResponder(cmdWords[1])
-			}
+			continue
 		case "doubletag":
 			if len(cmdWords) < 5 {
 				fmt.Println("To use doubletag provide the following instructions:")
@@ -129,8 +124,15 @@ func main() {
 			} else {
 				higherlevel.StpRootBridgeMitM2(cmdWords[1], cmdWords[2])
 			}
+		case "sniff":
+			if len(cmdWords) < 3 {
+				fmt.Println("To use sniff provide the following instructions:")
+				fmt.Println("sniff <interface1> <filter>")
+
+			} else {
+				go sniffer.Sniff(cmdWords[1], cmdWords[2])
+			}
 		}
 
 	}
-
 }
