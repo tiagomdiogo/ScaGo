@@ -30,4 +30,5 @@ func Send(packetBytes []byte, iface string) {
 		log.Fatal(err)
 	}
 	superS.Send(packetBytes)
+	superS.Close()
 }
