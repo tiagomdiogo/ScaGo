@@ -3,6 +3,8 @@ package packet
 import (
 	"fmt"
 	"github.com/google/gopacket"
+	"github.com/tiagomdiogo/GoPpy/supersocket"
+	"log"
 )
 
 func CraftPacket(layers ...gopacket.SerializableLayer) ([]byte, error) {
@@ -20,4 +22,12 @@ func CraftPacket(layers ...gopacket.SerializableLayer) ([]byte, error) {
 	}
 
 	return buffer.Bytes(), nil
+}
+
+func Send(packetBytes []byte, iface string) {
+	superS, err := supersocket.NewSuperSocket(iface, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	superS.Send(packetBytes)
 }
