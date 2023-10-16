@@ -2,6 +2,7 @@ package supersocket
 
 import (
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/google/gopacket"
@@ -80,4 +81,43 @@ func (ss *SuperSocket) SendMultiplePackets(packets [][]byte, maxConcurrentSends 
 
 func (ss *SuperSocket) GetHandle() *pcap.Handle {
 	return ss.handle
+}
+
+func Send(packetBytes []byte, iface string) {
+	superS, err := NewSuperSocket(iface, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	superS.Send(packetBytes)
+	superS.Close()
+}
+
+func SendMultiplePackets(packets [][]byte, iface string, maxConcurrentSends int) {
+	ss, err := NewSuperSocket(iface, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if maxConcurrentSends <= 0 {
+		maxConcurrentSends = len(packets)
+	}
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxConcurrentSends)
+
+	for _, packet := range packets {
+		wg.Add(1)
+		sem <- struct{}{}
+
+		go func(p []byte) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			err := ss.Send(p)
+			if err != nil {
+				fmt.Printf("Failed to send packet: %v\n", err)
+			}
+		}(packet)
+	}
+
+	wg.Wait()
 }

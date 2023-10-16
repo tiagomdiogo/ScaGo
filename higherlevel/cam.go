@@ -102,3 +102,30 @@ func CamBatch(iface string, packetCount, batchSize int) {
 		}
 	}
 }
+
+var err error = nil
+
+func CamSequential(iface string, packetCount int) {
+
+	packets := make([][]byte, packetCount)
+
+	for i := 0; i < packetCount; i++ {
+		randomSrcMAC := utils.ParseMACGen()
+		randomDstMac := utils.ParseMACGen()
+		etherLayer := craft.EthernetLayer()
+		etherLayer.SetSrcMAC(randomSrcMAC)
+		etherLayer.SetDstMAC(randomDstMac)
+		etherLayer.SetEthernetType(golayers.EthernetTypeIPv4)
+		ipLayer := craft.IPv4Layer()
+		ipLayer.SetSrcIP(utils.ParseIPGen())
+		ipLayer.SetDstIP(utils.ParseIPGen())
+
+		packets[i], err = craft.CraftPacket(etherLayer.Layer(), ipLayer.Layer())
+		if err != nil {
+			fmt.Println("Error crafting Ethernet packet:", err)
+			return
+		}
+		fmt.Println("Produced packet number:", packetCount)
+	}
+	communication.SendMultiplePackets(packets, iface, 1)
+}
