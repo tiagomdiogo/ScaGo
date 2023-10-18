@@ -27,7 +27,7 @@ func parseHosts(hosts string, mapList map[string]string, iface string) {
 
 		// Check if the line is a valid IP address.
 		if net.ParseIP(line) != nil {
-			macAddress, err := ARPScan(iface, line)
+			macAddress, err := ARPScanHost(iface, line)
 			if err != nil {
 				log.Fatal(err)
 			}

