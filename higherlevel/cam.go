@@ -11,16 +11,9 @@ import (
 )
 
 func Cam(iface string, packetCount int) {
-
-	ss, err := communication.NewSuperSocket(iface, "")
-	if err != nil {
-		fmt.Println("Error creating SuperSocket:", err)
-		return
-	}
-
 	packets := make([][]byte, packetCount)
-	var wg sync.WaitGroup
 
+	var wg sync.WaitGroup
 	for i := 0; i < packetCount; i++ {
 		wg.Add(1)
 		go func(i int) {
@@ -40,13 +33,11 @@ func Cam(iface string, packetCount int) {
 				fmt.Println("Error crafting Ethernet packet:", err)
 				return
 			}
-			fmt.Println("Produced packet number:", packetCount)
 		}(i)
 	}
-
 	wg.Wait()
-	fmt.Println("Sending Created packets")
-	err = ss.SendMultiplePackets(packets, 10)
+
+	communication.SendMultiplePackets(packets, iface, 10)
 	if err != nil {
 		fmt.Println("Error sending packets:", err)
 		return
@@ -54,13 +45,8 @@ func Cam(iface string, packetCount int) {
 }
 
 func CamBatch(iface string, packetCount, batchSize int) {
-	ss, err := communication.NewSuperSocket(iface, "")
-	if err != nil {
-		fmt.Println("Error creating SuperSocket:", err)
-		return
-	}
-	var wg sync.WaitGroup
 
+	var wg sync.WaitGroup
 	for start := 0; start < packetCount; start += batchSize {
 		end := start + batchSize
 		if end > packetCount {
@@ -89,13 +75,11 @@ func CamBatch(iface string, packetCount, batchSize int) {
 					fmt.Println("Error crafting Ethernet packet:", err)
 					return
 				}
-				fmt.Println("Produced packet number:", i)
 			}(i)
 		}
 		wg.Wait()
-		// Send this batch of packets
-		fmt.Println("Sending Created packets")
-		err = ss.SendMultiplePackets(packets, 10)
+
+		communication.SendMultiplePackets(packets, iface, 10)
 		if err != nil {
 			fmt.Println("Error sending packets:", err)
 			return
@@ -125,7 +109,6 @@ func CamSequential(iface string, packetCount int) {
 			fmt.Println("Error crafting Ethernet packet:", err)
 			return
 		}
-		fmt.Println("Produced packet number:", packetCount)
 	}
 	communication.SendMultiplePackets(packets, iface, 1)
 }
