@@ -121,3 +121,13 @@ func SendMultiplePackets(packets [][]byte, iface string, maxConcurrentSends int)
 
 	wg.Wait()
 }
+
+func Recv(iface string) gopacket.Packet {
+	superS, err := NewSuperSocket(iface, "")
+	defer superS.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	packet, err := superS.Recv()
+	return packet
+}

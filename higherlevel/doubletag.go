@@ -3,19 +3,12 @@ package higherlevel
 import (
 	golayers "github.com/google/gopacket/layers"
 	craft "github.com/tiagomdiogo/GoPpy/packet"
-	"github.com/tiagomdiogo/GoPpy/supersocket"
+	communication "github.com/tiagomdiogo/GoPpy/supersocket"
 	"github.com/tiagomdiogo/GoPpy/utils"
 	"log"
 )
 
 func DoubleTagVlan(iface, dstIP string, vlanOut, vlanIn uint16) {
-
-	//Create a supersocket
-	SuperS, err := supersocket.NewSuperSocket(iface, "")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer SuperS.Close()
 
 	//Create ETH Layer
 	ethLayer := craft.EthernetLayer()
@@ -46,5 +39,5 @@ func DoubleTagVlan(iface, dstIP string, vlanOut, vlanIn uint16) {
 		log.Fatal(err)
 	}
 
-	SuperS.Send(craftedPacket)
+	communication.Send(craftedPacket, iface)
 }
