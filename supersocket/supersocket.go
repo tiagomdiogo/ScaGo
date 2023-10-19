@@ -92,6 +92,16 @@ func Send(packetBytes []byte, iface string) {
 	superS.Close()
 }
 
+func Recv(iface string) gopacket.Packet {
+	superS, err := NewSuperSocket(iface, "")
+	defer superS.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	packet, err := superS.Recv()
+	return packet
+}
+
 func SendMultiplePackets(packets [][]byte, iface string, maxConcurrentSends int) {
 	ss, err := NewSuperSocket(iface, "")
 	if err != nil {
@@ -120,14 +130,4 @@ func SendMultiplePackets(packets [][]byte, iface string, maxConcurrentSends int)
 	}
 
 	wg.Wait()
-}
-
-func Recv(iface string) gopacket.Packet {
-	superS, err := NewSuperSocket(iface, "")
-	defer superS.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	packet, err := superS.Recv()
-	return packet
 }
