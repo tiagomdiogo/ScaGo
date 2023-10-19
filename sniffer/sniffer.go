@@ -62,7 +62,7 @@ func (s *Sniffer) GetPackets() []gopacket.Packet {
 	return packets
 }
 
-func Sniff(iFace, filter string) {
+func SniffP(iFace, filter string) {
 
 	handle, err := pcap.OpenLive(iFace, 1600, true, pcap.BlockForever)
 	if err != nil {
