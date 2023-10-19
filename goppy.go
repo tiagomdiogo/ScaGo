@@ -39,8 +39,6 @@ func help() {
 
 func main() {
 
-	go sniffer.SniffP("en0", "tcp and port 4343")
-
 	fmt.Println("[*] Welcome to Goppy interactive shell")
 	fmt.Println("[*] Too see available commands type the command: help")
 
