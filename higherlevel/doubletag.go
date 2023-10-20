@@ -2,9 +2,9 @@ package higherlevel
 
 import (
 	golayers "github.com/google/gopacket/layers"
-	craft "github.com/tiagomdiogo/GoPpy/packet"
-	communication "github.com/tiagomdiogo/GoPpy/supersocket"
-	"github.com/tiagomdiogo/GoPpy/utils"
+	craft "github.com/tiagomdiogo/ScaGo/packet"
+	communication "github.com/tiagomdiogo/ScaGo/supersocket"
+	"github.com/tiagomdiogo/ScaGo/utils"
 	"log"
 )
 

@@ -2,7 +2,7 @@ package packet
 
 import (
 	"errors"
-	protocols "github.com/tiagomdiogo/GoPpy/protocols"
+	protocols "github.com/tiagomdiogo/ScaGo/protocols"
 	"net"
 )
 

@@ -1,9 +1,9 @@
 package higherlevel
 
 import (
-	"github.com/tiagomdiogo/GoPpy/packet"
-	"github.com/tiagomdiogo/GoPpy/supersocket"
-	"github.com/tiagomdiogo/GoPpy/utils"
+	"github.com/tiagomdiogo/ScaGo/packet"
+	"github.com/tiagomdiogo/ScaGo/supersocket"
+	"github.com/tiagomdiogo/ScaGo/utils"
 	"log"
 	"time"
 )

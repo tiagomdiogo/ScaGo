@@ -2,7 +2,7 @@ package sniffer
 
 import (
 	"github.com/google/gopacket"
-	"github.com/tiagomdiogo/GoPpy/supersocket"
+	"github.com/tiagomdiogo/ScaGo/supersocket"
 	"log"
 )
 

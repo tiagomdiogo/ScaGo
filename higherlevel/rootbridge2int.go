@@ -2,9 +2,9 @@ package higherlevel
 
 import (
 	"fmt"
-	"github.com/tiagomdiogo/GoPpy/sniffer"
-	"github.com/tiagomdiogo/GoPpy/supersocket"
-	"github.com/tiagomdiogo/GoPpy/utils"
+	"github.com/tiagomdiogo/ScaGo/sniffer"
+	"github.com/tiagomdiogo/ScaGo/supersocket"
+	"github.com/tiagomdiogo/ScaGo/utils"
 	"log"
 	"strconv"
 	"strings"

@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/tiagomdiogo/GoPpy/higherlevel"
-	"github.com/tiagomdiogo/GoPpy/sniffer"
+	"github.com/tiagomdiogo/ScaGo/higherlevel"
+	"github.com/tiagomdiogo/ScaGo/sniffer"
 	"log"
 	"os"
 	"strconv"

@@ -1,4 +1,4 @@
-module github.com/tiagomdiogo/GoPpy
+module github.com/tiagomdiogo/ScaGo
 
 go 1.19
 
