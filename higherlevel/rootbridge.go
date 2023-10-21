@@ -8,6 +8,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func StpRootBridgeMitM(iface1 string) {
@@ -90,5 +91,6 @@ func stpRootBridgeHijack(iface string, params map[string]interface{}) {
 			}
 			communication.Send(finalAck, iface)
 		}
+		time.Sleep(5 * time.Second)
 	}
 }
