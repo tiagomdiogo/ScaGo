@@ -17,6 +17,7 @@ func BridgeAndSniff(iface1, iface2 string) {
 	go bridge_aux(superSocket1, superSocket2)
 	go bridge_aux(superSocket2, superSocket1)
 
+	select {}
 }
 
 func bridge_aux(ss1, ss2 *supersocket.SuperSocket) {

