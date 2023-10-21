@@ -102,6 +102,16 @@ func Recv(iface string) gopacket.Packet {
 	return packet
 }
 
+func SendRecv(packetBytes []byte, iface string) gopacket.Packet {
+	superS, err := NewSuperSocket(iface, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	superS.Send(packetBytes)
+	packet, _ := superS.Recv()
+	return packet
+}
+
 func SendMultiplePackets(packets [][]byte, iface string, maxConcurrentSends int) {
 	ss, err := NewSuperSocket(iface, "")
 	if err != nil {

@@ -34,9 +34,7 @@ func ARPScanHost(iface string, targetIP string) (string, error) {
 	}
 
 	for {
-		communication.Send(arpRequestPacket, iface)
-		pkt := communication.Recv(iface)
-
+		pkt := communication.SendRecv(arpRequestPacket, iface)
 		arpLayer := utils.GetARPLayer(pkt)
 		if arpLayer != nil && arpLayer.Operation == layers.ARPReply && net.IP(arpLayer.SourceProtAddress).String() == targetIP {
 			return net.HardwareAddr(arpLayer.SourceHwAddress).String(), nil
