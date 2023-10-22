@@ -25,8 +25,6 @@ func parseHosts(hosts string, mapList map[string]string, iface string) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		// Check if the line is a valid IP address.
 		if net.ParseIP(line) != nil {
 			macAddress, err := ARPScanHost(iface, line)
 			if err != nil {
