@@ -44,7 +44,6 @@ func PoisonArp(mapList map[string]string, iface string) {
 		for addr1, mac1 := range mapList {
 			for addr2, mac2 := range mapList {
 				if addr1 != addr2 {
-					fmt.Printf("Spoofing ARP cache: targetIP=%s, targetMac=%s, sourceIP=%s\n", addr1, mac1, addr2)
 					packet1, packet2 := CreateFakeArp(addr1, addr2, mac1, mac2, macInt)
 					communication.Send(packet1, iface)
 					communication.Send(packet2, iface)
