@@ -39,8 +39,10 @@ func DHCPSpoofing(pool, mask, gateway, iface string) {
 					switch messageType {
 					case layers.DHCPMsgTypeDiscover:
 						DHCPOfferAck(dhcp, iface, availableIP[0], serverIP, net.ParseIP(gateway), net.ParseIP(mask), "offer")
+						fmt.Printf("[*] Got dhcp DISCOVER from: %s\n [*] Sending OFFER...\n [*] Sending DHCP Offer\n", dhcp.ClientHWAddr.String())
 					case layers.DHCPMsgTypeRequest:
 						DHCPOfferAck(dhcp, iface, availableIP[0], serverIP, net.ParseIP(gateway), net.ParseIP(mask), "ack")
+						fmt.Println("[*] Sending ACK")
 					}
 				}
 			}
@@ -83,6 +85,5 @@ func DHCPOfferAck(dhcp *layers.DHCPv4, iface string, availableIP, sourceIp, gate
 	dhcpLayer.AddOption("end", 0)
 
 	pkt, _ := packet.CraftPacket(ethLayer.Layer(), ipLayer.Layer(), udpLayer.Layer(), dhcpLayer.Layer())
-	fmt.Printf("[*] Got dhcp DISCOVER from: %s\n [*] Sending OFFER...\n [*] Sending DHCP Offer\n")
 	communication.Send(pkt, iface)
 }
