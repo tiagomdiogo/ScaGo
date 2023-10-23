@@ -21,7 +21,7 @@ func DHCPLayer() *DHCP {
 			HardwareLen:  6,
 			HardwareOpts: 0,
 			Xid:          rand.Uint32(), // Transaction ID should be random
-			Flags:        0x8000,
+			Flags:        0x0000,
 		},
 	}
 }
@@ -37,6 +37,10 @@ func (d *DHCP) SetDstMac(macStr string) error {
 
 func (d *DHCP) SetXid(xid uint32) {
 	d.layer.Xid = xid
+}
+
+func (d *DHCP) SetNextServerIP(serverIP string) {
+	d.layer.NextServerIP = net.ParseIP(serverIP)
 }
 
 func (d *DHCP) SetDstIP(ipStr string) error {
@@ -117,6 +121,8 @@ func (d *DHCP) AddOption(optType string, data interface{}) {
 		binary.BigEndian.PutUint32(tmpBuffer, uint32(v))
 		byteData = tmpBuffer
 	case []byte:
+		byteData = v
+	case net.IP:
 		byteData = v
 	default:
 		return // or maybe log an error

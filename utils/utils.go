@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -37,6 +38,38 @@ func ParseIPGen(cidr ...string) string {
 	ip := make(net.IP, 4)
 	rand.Read(ip)
 	return ip.String()
+}
+
+func GeneratePool(pool, mask string) ([]net.IP, error) {
+	maskAux := net.ParseIP(mask)
+	bits := strings.ReplaceAll(maskAux.String(), ".", "")
+
+	count := 0
+	for _, bit := range bits {
+		if bit == '1' {
+			count++
+		}
+	}
+
+	ip, ipnet, err := net.ParseCIDR(pool + "/" + strconv.Itoa(count))
+	if err != nil {
+		return nil, err
+	}
+
+	var ips []net.IP
+	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); incIP(ip) {
+		ips = append(ips, append(net.IP(nil), ip...))
+	}
+	return ips, nil
+}
+
+func incIP(ip net.IP) {
+	for j := len(ip) - 1; j >= 0; j-- {
+		ip[j]++
+		if ip[j] > 0 {
+			break
+		}
+	}
 }
 
 func ParseMACGen(cidr ...string) string {

