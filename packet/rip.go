@@ -2,6 +2,7 @@ package packet
 
 import (
 	"errors"
+	"github.com/google/gopacket/layers"
 	protocols "github.com/tiagomdiogo/ScaGo/protocols"
 	"net"
 )
@@ -11,6 +12,7 @@ type RIP struct {
 }
 
 func RIPLayer() *RIP {
+	layers.RegisterUDPPortLayerType(520, protocols.LayerTypeRip)
 	return &RIP{
 		layer: &protocols.RIPPacket{},
 	}

