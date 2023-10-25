@@ -10,7 +10,6 @@ import (
 var LayerTypeRip = gopacket.RegisterLayerType(7777, gopacket.LayerTypeMetadata{Name: "RIPPacket", Decoder: gopacket.DecodeFunc(decodeRIPPacket)})
 
 type RIPEntry struct {
-	layers.BaseLayer
 	AddressFamilyIdentifier uint16
 	RouteTag                uint16
 	IPAddress               [4]byte
@@ -20,6 +19,7 @@ type RIPEntry struct {
 }
 
 type RIPPacket struct {
+	layers.BaseLayer
 	Command uint8
 	Version uint8
 	Zero    uint16 // Unused, should be zero

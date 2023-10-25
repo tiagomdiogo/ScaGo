@@ -115,7 +115,45 @@ func IPbyInt(interfaceName string) string {
 func RandomPort() string {
 	return strconv.Itoa(rand.Intn(65535))
 }
+func GetInterfaceByIP(ip net.IP) (*net.Interface, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
 
+	for _, iface := range interfaces {
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return nil, err
+		}
+		for _, addr := range addrs {
+			ipNet, ok := addr.(*net.IPNet)
+			if ok && ipNet.IP.Equal(ip) {
+				return &iface, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func AreIPsInSameSubnet(ip1, ip2 net.IP) bool {
+	mask := ip1.DefaultMask()
+	return ip1.Mask(mask).Equal(ip2.Mask(mask))
+}
+
+func GetDefaultGatewayIP() (net.IP, error) {
+	routes, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, err
+	}
+	for _, route := range routes {
+		ipNet, ok := route.(*net.IPNet)
+		if ok && ipNet.IP.IsGlobalUnicast() && !ipNet.IP.IsLoopback() {
+			return ipNet.IP, nil
+		}
+	}
+	return nil, nil
+}
 func GetRouteInterface(dstIP net.IP) (string, error) {
 	// Prepare the command
 	cmd := exec.Command("ip", "route", "get", dstIP.String())
