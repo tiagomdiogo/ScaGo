@@ -123,18 +123,11 @@ func GetInterfaceByIP(ip net.IP) (*net.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	var defaultIface *net.Interface
 	for _, iface := range interfaces {
 		if iface.Flags&net.FlagLoopback == 0 { // Skip loopback interfaces
 			addrs, err := iface.Addrs()
 			if err != nil {
 				return nil, err
-			}
-
-			// If the interface has at least one IP address, we can consider it for the default interface.
-			if len(addrs) > 0 && defaultIface == nil {
-				defaultIface = &iface
 			}
 
 			for _, addr := range addrs {
@@ -145,15 +138,40 @@ func GetInterfaceByIP(ip net.IP) (*net.Interface, error) {
 			}
 		}
 	}
-	if defaultIface != nil {
-		return defaultIface, nil
-	}
-	return nil, errors.New("no non-loopback interfaces with an IP address found")
+	return nil, nil
 }
 
 func AreIPsInSameSubnet(ip1, ip2 net.IP) bool {
 	mask := ip1.DefaultMask()
 	return ip1.Mask(mask).Equal(ip2.Mask(mask))
+}
+
+func GetDefaultGatewayInterface() (*net.Interface, error) {
+	gatewayIP, err := GetDefaultGatewayIP()
+	if err != nil {
+		return nil, err
+	}
+
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagLoopback == 0 {
+			addrs, err := iface.Addrs()
+			if err != nil {
+				return nil, err
+			}
+			for _, addr := range addrs {
+				ipNet, ok := addr.(*net.IPNet)
+				if ok && ipNet.Contains(gatewayIP) {
+					return &iface, nil
+				}
+			}
+		}
+	}
+	return nil, errors.New("interface for default gateway not found")
 }
 
 func GetDefaultGatewayIP() (net.IP, error) {

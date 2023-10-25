@@ -58,8 +58,10 @@ func packetCheck(layers []gopacket.Layer) []gopacket.SerializableLayer {
 		iface, _ := utils.GetInterfaceByIP(ipLayer.SrcIP)
 		if iface != nil {
 			ethLayer.SetSrcMAC(iface.HardwareAddr.String())
+		} else {
+			iface, _ := utils.GetDefaultGatewayInterface()
+			ethLayer.SetSrcMAC(iface.HardwareAddr.String())
 		}
-
 		if utils.AreIPsInSameSubnet(ipLayer.SrcIP, ipLayer.DstIP) {
 			dstMAC, _ := ARPScanHost(iface.Name, ipLayer.DstIP.String())
 			ethLayer.SetDstMAC(dstMAC)
