@@ -1,7 +1,6 @@
 package packet
 
 import (
-	"errors"
 	"github.com/google/gopacket/layers"
 	protocols "github.com/tiagomdiogo/ScaGo/protocols"
 	"net"
@@ -27,18 +26,14 @@ func (r *RIP) SetVersion(version uint8) {
 }
 
 func (r *RIP) AddEntry(aFI uint16, routeTag uint16, ipAddress, subnetMask, nextHop net.IP, metric uint32) error {
-	if len(ipAddress) != 4 || len(subnetMask) != 4 || len(nextHop) != 4 {
-		return errors.New("invalid IP length for RIP entry")
-	}
-
 	entry := protocols.RIPEntry{
 		AddressFamilyIdentifier: aFI,
 		RouteTag:                routeTag,
 		Metric:                  metric,
 	}
-	copy(entry.IPAddress[:], ipAddress)
-	copy(entry.SubnetMask[:], subnetMask)
-	copy(entry.NextHop[:], nextHop)
+	copy(entry.IPAddress[:], ipAddress.To4())
+	copy(entry.SubnetMask[:], subnetMask.To4())
+	copy(entry.NextHop[:], nextHop.To4())
 
 	r.layer.Entries = append(r.layer.Entries, entry)
 	return nil
