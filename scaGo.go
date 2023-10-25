@@ -106,7 +106,7 @@ func main() {
 				fmt.Println("tcpsyn <Target IP> <TargetPort> ")
 				continue
 			} else {
-				higherlevel.TCPSYNFlood(cmdWords[1], cmdWords[2], 120)
+				higherlevel.TCPSYNFlood(cmdWords[1], cmdWords[2], "120", 10000)
 			}
 		case "rootbridge":
 			if len(cmdWords) < 2 {

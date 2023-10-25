@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/google/gopacket"
 	golayers "github.com/google/gopacket/layers"
-	"github.com/tiagomdiogo/ScaGo/higherlevel"
+	communication "github.com/tiagomdiogo/ScaGo/supersocket"
 	"github.com/tiagomdiogo/ScaGo/utils"
+	"net"
+	"time"
 )
 
 func CraftPacket(layers ...gopacket.Layer) ([]byte, error) {
@@ -60,16 +62,15 @@ func packetCheck(layers []gopacket.Layer) []gopacket.SerializableLayer {
 			}
 
 			if utils.AreIPsInSameSubnet(ipLayer.SrcIP, ipLayer.DstIP) {
-				dstMAC, _ := higherlevel.ARPScanHost(iface.Name, ipLayer.DstIP.String())
+				dstMAC, _ := ARPScanHost(iface.Name, ipLayer.DstIP.String())
 				ethLayer.SetDstMAC(dstMAC)
 			} else {
 				gatewayIP, _ := utils.GetDefaultGatewayIP()
-				dstMAC, _ := higherlevel.ARPScanHost(iface.Name, gatewayIP.String())
+				dstMAC, _ := ARPScanHost(iface.Name, gatewayIP.String())
 				ethLayer.SetDstMAC(dstMAC)
 			}
 		}
 	}
-
 	layers = append([]gopacket.Layer{ethLayer.Layer()}, layers...)
 
 	result := make([]gopacket.SerializableLayer, 0, len(layers))
@@ -79,4 +80,37 @@ func packetCheck(layers []gopacket.Layer) []gopacket.SerializableLayer {
 		}
 	}
 	return result
+}
+
+func ARPScanHost(iface string, targetIP string) (string, error) {
+	srcMAC := utils.MacByInt(iface)
+	srcIP := utils.IPbyInt(iface)
+
+	ethLayer := EthernetLayer()
+	ethLayer.SetSrcMAC(srcMAC)
+	ethLayer.SetDstMAC("ff:ff:ff:ff:ff:ff")
+	ethLayer.SetEthernetType(golayers.EthernetTypeARP)
+
+	arpRequest := ARPLayer()
+	arpRequest.SetSrcMac(srcMAC)
+	arpRequest.SetSrcIP(srcIP)
+	arpRequest.SetDstIP(targetIP)
+	arpRequest.SetRequest()
+	arpRequest.SetDstMac("ff:ff:ff:ff:ff:ff")
+
+	arpRequestPacket, err := CraftPacket(ethLayer.Layer(), arpRequest.Layer())
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		pkt := communication.SendRecv(arpRequestPacket, iface)
+		arpLayer := utils.GetARPLayer(pkt)
+		if arpLayer != nil && arpLayer.Operation == golayers.ARPReply && net.IP(arpLayer.SourceProtAddress).String() == targetIP {
+			return net.HardwareAddr(arpLayer.SourceHwAddress).String(), nil
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
 }

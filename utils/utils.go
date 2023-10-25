@@ -115,25 +115,38 @@ func IPbyInt(interfaceName string) string {
 func RandomPort() string {
 	return strconv.Itoa(rand.Intn(65535))
 }
+
 func GetInterfaceByIP(ip net.IP) (*net.Interface, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
 	}
 
+	var defaultIface *net.Interface
 	for _, iface := range interfaces {
-		addrs, err := iface.Addrs()
-		if err != nil {
-			return nil, err
-		}
-		for _, addr := range addrs {
-			ipNet, ok := addr.(*net.IPNet)
-			if ok && ipNet.IP.Equal(ip) {
-				return &iface, nil
+		if iface.Flags&net.FlagLoopback == 0 { // Skip loopback interfaces
+			addrs, err := iface.Addrs()
+			if err != nil {
+				return nil, err
+			}
+
+			// If the interface has at least one IP address, we can consider it for the default interface.
+			if len(addrs) > 0 && defaultIface == nil {
+				defaultIface = &iface
+			}
+
+			for _, addr := range addrs {
+				ipNet, ok := addr.(*net.IPNet)
+				if ok && ipNet.IP.Equal(ip) {
+					return &iface, nil
+				}
 			}
 		}
 	}
-	return nil, nil
+	if defaultIface != nil {
+		return defaultIface, nil
+	}
+	return nil, errors.New("no non-loopback interfaces with an IP address found")
 }
 
 func AreIPsInSameSubnet(ip1, ip2 net.IP) bool {
