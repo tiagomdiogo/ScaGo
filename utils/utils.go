@@ -8,7 +8,9 @@ import (
 	"net"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -155,17 +157,32 @@ func AreIPsInSameSubnet(ip1, ip2 net.IP) bool {
 }
 
 func GetDefaultGatewayIP() (net.IP, error) {
-	routes, err := net.InterfaceAddrs()
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("route", "print", "0.0.0.0")
+	case "linux", "darwin":
+		cmd = exec.Command("ip", "route", "get", "1")
+	default:
+		return nil, errors.New("unsupported operating system")
+	}
+
+	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
-	for _, route := range routes {
-		ipNet, ok := route.(*net.IPNet)
-		if ok && ipNet.IP.IsGlobalUnicast() && !ipNet.IP.IsLoopback() {
-			return ipNet.IP, nil
+
+	output := string(out)
+	lines := strings.Split(output, "\n")
+
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) > 1 && (fields[0] == "default" || fields[0] == "0.0.0.0") {
+			return net.ParseIP(fields[1]), nil
 		}
 	}
-	return nil, nil
+	return nil, errors.New("default gateway not found")
 }
 func GetRouteInterface(dstIP net.IP) (string, error) {
 	// Prepare the command

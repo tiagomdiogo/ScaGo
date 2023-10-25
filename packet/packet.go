@@ -52,26 +52,24 @@ func packetCheck(layers []gopacket.Layer) []gopacket.SerializableLayer {
 		}
 	}
 
-	ethLayer := EthernetLayer()
-	if !hasEthernetLayer {
-		if hasIPLayer {
-			ethLayer.SetEthernetType(golayers.EthernetTypeIPv4)
-			iface, _ := utils.GetInterfaceByIP(ipLayer.SrcIP)
-			if iface != nil {
-				ethLayer.SetSrcMAC(iface.HardwareAddr.String())
-			}
-
-			if utils.AreIPsInSameSubnet(ipLayer.SrcIP, ipLayer.DstIP) {
-				dstMAC, _ := ARPScanHost(iface.Name, ipLayer.DstIP.String())
-				ethLayer.SetDstMAC(dstMAC)
-			} else {
-				gatewayIP, _ := utils.GetDefaultGatewayIP()
-				dstMAC, _ := ARPScanHost(iface.Name, gatewayIP.String())
-				ethLayer.SetDstMAC(dstMAC)
-			}
+	if !hasEthernetLayer && hasIPLayer {
+		ethLayer := EthernetLayer()
+		ethLayer.SetEthernetType(golayers.EthernetTypeIPv4)
+		iface, _ := utils.GetInterfaceByIP(ipLayer.SrcIP)
+		if iface != nil {
+			ethLayer.SetSrcMAC(iface.HardwareAddr.String())
 		}
+
+		if utils.AreIPsInSameSubnet(ipLayer.SrcIP, ipLayer.DstIP) {
+			dstMAC, _ := ARPScanHost(iface.Name, ipLayer.DstIP.String())
+			ethLayer.SetDstMAC(dstMAC)
+		} else {
+			gatewayIP, _ := utils.GetDefaultGatewayIP()
+			dstMAC, _ := ARPScanHost(iface.Name, gatewayIP.String())
+			ethLayer.SetDstMAC(dstMAC)
+		}
+		layers = append([]gopacket.Layer{ethLayer.Layer()}, layers...)
 	}
-	layers = append([]gopacket.Layer{ethLayer.Layer()}, layers...)
 
 	result := make([]gopacket.SerializableLayer, 0, len(layers))
 	for _, layer := range layers {
