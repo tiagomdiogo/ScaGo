@@ -181,7 +181,7 @@ func GetDefaultGatewayIP() (net.IP, error) {
 	case "windows":
 		cmd = exec.Command("route", "print", "0.0.0.0")
 	case "linux", "darwin":
-		cmd = exec.Command("ip", "route", "get", "1")
+		cmd = exec.Command("ip", "route")
 	default:
 		return nil, errors.New("unsupported operating system")
 	}
@@ -197,7 +197,7 @@ func GetDefaultGatewayIP() (net.IP, error) {
 	for _, line := range lines {
 		fields := strings.Fields(line)
 		if len(fields) > 1 && (fields[0] == "default" || fields[0] == "0.0.0.0") {
-			return net.ParseIP(fields[1]), nil
+			return net.ParseIP(fields[2]), nil
 		}
 	}
 	return nil, errors.New("default gateway not found")
