@@ -123,7 +123,7 @@ func (d *DHCP) AddOption(optType string, data interface{}) {
 	case []byte:
 		byteData = v
 	case net.IP:
-		byteData = v
+		byteData = v.To4()
 	default:
 		return // or maybe log an error
 	}

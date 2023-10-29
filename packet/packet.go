@@ -46,10 +46,12 @@ func packetCheck(layers []gopacket.Layer) []gopacket.SerializableLayer {
 		case *golayers.UDP:
 			if ipLayer != nil {
 				l.SetNetworkLayerForChecksum(ipLayer)
+				ipLayer.Protocol = golayers.IPProtocolUDP
 			}
 		case *golayers.TCP:
 			if ipLayer != nil {
 				l.SetNetworkLayerForChecksum(ipLayer)
+				ipLayer.Protocol = golayers.IPProtocolTCP
 			}
 		}
 	}
