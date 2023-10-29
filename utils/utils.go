@@ -70,7 +70,7 @@ func GeneratePool(pool, mask string) ([]net.IP, error) {
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); incIP(ip) {
 		ips = append(ips, append(net.IP(nil), ip...))
 	}
-	return ips, nil
+	return ips[1:], nil
 }
 
 func incIP(ip net.IP) {

@@ -43,7 +43,11 @@ func DHCPSpoofing(pool, mask, gateway, iface string) {
 					case layers.DHCPMsgTypeRequest:
 						DHCPOfferAck(dhcp, iface, availableIP[0], serverIP, net.ParseIP(gateway), net.ParseIP(mask), "ack")
 						fmt.Println("[*] Sending ACK")
+						if len(availableIP) > 0 {
+							availableIP = availableIP[1:]
+						}
 					}
+
 				}
 			}
 		}

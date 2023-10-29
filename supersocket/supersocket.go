@@ -128,7 +128,6 @@ func SendMultiplePackets(packets [][]byte, iface string, maxConcurrentSends int)
 	for _, packet := range packets {
 		wg.Add(1)
 		sem <- struct{}{}
-
 		go func(p []byte) {
 			defer wg.Done()
 			defer func() { <-sem }()
