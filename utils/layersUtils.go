@@ -5,6 +5,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
+// GetARPLayer retrieves the ARP layer of a packet in format gopacket.Packet
 func GetARPLayer(packet gopacket.Packet) *layers.ARP {
 	// Get the ARP layer from this packet
 	if arpLayer := packet.Layer(layers.LayerTypeARP); arpLayer != nil {
@@ -16,6 +17,7 @@ func GetARPLayer(packet gopacket.Packet) *layers.ARP {
 	}
 }
 
+// GetSTPLayer retrieves the STP layer of a packet in format gopacket.Packet
 func GetSTPLayer(packet gopacket.Packet) *layers.STP {
 	// Get the ARP layer from this packet
 	if stpLayer := packet.Layer(layers.LayerTypeSTP); stpLayer != nil {

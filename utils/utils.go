@@ -14,6 +14,9 @@ import (
 	"time"
 )
 
+// ParseIPGen this function, given an empty argument it generates a
+// random IP. If the argument provided is for e.g. "10.0.0.0" it will generate
+// a random IP in that subnet. Note that the default mask is 255.255.255.0
 func ParseIPGen(cidr ...string) string {
 	rand.Seed(time.Now().UnixNano())
 
@@ -41,6 +44,8 @@ func ParseIPGen(cidr ...string) string {
 	return ip.String()
 }
 
+// GeneratePool Given a network pool and a mask it will generate all the
+// IPs in the subnet and return the array of the available IPs.
 func GeneratePool(pool, mask string) ([]net.IP, error) {
 	ip := net.ParseIP(mask)
 	if ip == nil {
@@ -82,6 +87,7 @@ func incIP(ip net.IP) {
 	}
 }
 
+// ParseMACGen Generates a Random Mac address
 func ParseMACGen(cidr ...string) string {
 	if len(cidr) > 0 {
 		return cidr[0]
@@ -90,6 +96,9 @@ func ParseMACGen(cidr ...string) string {
 
 }
 
+// MacByInt given an interface name, it checks the OS information
+// and retrieves the MAC address of that interface. Not that it
+// only supports Unix OS.
 func MacByInt(ifaceName string) string {
 	iface, err := net.InterfaceByName(ifaceName)
 	if err != nil {
@@ -99,6 +108,9 @@ func MacByInt(ifaceName string) string {
 	return iface.HardwareAddr.String()
 }
 
+// IPbyInt given an interface, it checks the OS information
+// and retrieves the IP address assigned to that interface
+// It only supports Unix OS.
 func IPbyInt(interfaceName string) string {
 	iface, err := net.InterfaceByName(interfaceName)
 	if err != nil {
@@ -114,10 +126,13 @@ func IPbyInt(interfaceName string) string {
 	return ""
 }
 
+// RandomPort Generates a random port until 65535.
 func RandomPort() string {
 	return strconv.Itoa(rand.Intn(65535))
 }
 
+// GetInterfaceByIP Given a certain IP, it retrieves the interface
+// with the given IP assigned.
 func GetInterfaceByIP(ip net.IP) (*net.Interface, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
@@ -141,11 +156,14 @@ func GetInterfaceByIP(ip net.IP) (*net.Interface, error) {
 	return nil, nil
 }
 
+// AreIPsInSameSubnet Given two IPs, checks if they belong to the same subnet
 func AreIPsInSameSubnet(ip1, ip2 net.IP) bool {
 	mask := ip1.DefaultMask()
 	return ip1.Mask(mask).Equal(ip2.Mask(mask))
 }
 
+// GetDefaultGatewayInterface retrieves the interface that has connection
+// to the default gateway.
 func GetDefaultGatewayInterface() (*net.Interface, error) {
 	gatewayIP, err := GetDefaultGatewayIP()
 	if err != nil {
@@ -174,6 +192,7 @@ func GetDefaultGatewayInterface() (*net.Interface, error) {
 	return nil, errors.New("interface for default gateway not found")
 }
 
+// GetDefaultGatewayInterface Retrives the IP of the default gateway
 func GetDefaultGatewayIP() (net.IP, error) {
 	var cmd *exec.Cmd
 
@@ -202,6 +221,9 @@ func GetDefaultGatewayIP() (net.IP, error) {
 	}
 	return nil, errors.New("default gateway not found")
 }
+
+// GetRouteInterface returns the name of the interface that has
+// a routing to the given IP address.
 func GetRouteInterface(dstIP net.IP) (string, error) {
 	// Prepare the command
 	cmd := exec.Command("ip", "route", "get", dstIP.String())
