@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+// help is an aux function to output all the available instructions on
+// the shell mode
 func help() {
 	fmt.Println("Available commands:")
 	fmt.Println("sniff <interface name> - sniffs and shows packets to the desired interface")
@@ -37,12 +39,12 @@ func help() {
 
 }
 
+// main function of the library, it launches a shell that can be used to
+// start the several coded attacks.
 func main() {
 
 	fmt.Println("[*] Welcome to Goppy interactive shell")
 	fmt.Println("[*] Too see available commands type the command: help")
-
-	//Creating a simple shell to read commands
 
 	reader := bufio.NewReader(os.Stdin)
 
@@ -60,6 +62,8 @@ func main() {
 			fmt.Println("Please input any instruction")
 			continue
 		}
+		//switch case for each of the available functions
+		//it launches the function if enough arguments are provided.
 		switch cmdWords[0] {
 		case "help":
 			help()
