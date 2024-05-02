@@ -28,3 +28,15 @@ func GetSTPLayer(packet gopacket.Packet) *layers.STP {
 		return nil
 	}
 }
+
+// GetUDPLayer retrieves the STP layer of a packet in format gopacket.Packet
+func GetUDPLayer(packet gopacket.Packet) *layers.UDP {
+	// Get the ARP layer from this packet
+	if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
+		// The packet has an UDP layer, return it.
+		return udpLayer.(*layers.UDP)
+	} else {
+		// The packet does not have an UDP layer.
+		return nil
+	}
+}

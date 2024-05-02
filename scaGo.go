@@ -28,15 +28,27 @@ func help() {
 	fmt.Println("")
 	fmt.Println("Root Bridge takeover - Consists of taking the role of Root bridge on a LAN network")
 	fmt.Println("To perform this attack type: rootbridge <Interface>")
+	fmt.Println("")
 	fmt.Println("Root Bridge takeover 2 interfaces - Consists of taking the role of Root bridge with 2 interfaces on a LAN network")
 	fmt.Println("To perform this attack type: rootbridge <Interface1> <Interface2>")
+	fmt.Println("")
 	fmt.Println("DHCP Spoofing - Consists of sending spoofed responses with malicious configurations")
 	fmt.Println("To perform this attack type: dhcpspoofing <interface>")
+	fmt.Println("")
 	fmt.Println("Double tag - inject malicious data into a network by encapsulating packets with two VLAN tags, deceiving switches and gaining unauthorized access to traffic on different VLANs.")
 	fmt.Println("To perform this attack type: doubletag <interface> <victimIP> <VlanOut> <vlanIn>")
+	fmt.Println("")
 	fmt.Println("TCP SYN - Consume server resources by sending SYN requests to make the system unresponsive to legitimate traffic.")
 	fmt.Println("tcpsyn <Target IP> <TargetPort>")
-
+	fmt.Println("")
+	fmt.Println("IKEv1 DoS - Consists of performing a Denial of Service attack to IKEv1 tunnel through spoofed messages")
+	fmt.Println("To perform this attack type: ikev1dos <flag> <number_of_packets> <destination_ip> <interface>")
+	fmt.Println("Available flags: -c concurrent packets | -s sequential packets")
+	fmt.Println("")
+	fmt.Println("IKEv2 DoS - Consists of performing a Denial of Service attack to IKEv2 tunnel through spoofed messages")
+	fmt.Println("Available flags: -c concurrent packets | -s sequential packets")
+	fmt.Println("To perform this attack type: ikev2dos <flag> <number_of_packets> <destination_ip> <interface>")
+	fmt.Println("")
 }
 
 // main function of the library, it launches a shell that can be used to
@@ -135,6 +147,45 @@ func main() {
 
 			} else {
 				go sniffer.SniffP(cmdWords[1], cmdWords[2])
+			}
+		case "ikev1dos":
+			if len(cmdWords) < 4 {
+				fmt.Println("To use ikev1dos provide the following instructions:")
+				fmt.Println("ikev1dos <flag> <number_of_packets> <destination_ip> <interface> <batch_size>")
+
+			} else if cmdWords[1] == "-s" {
+				npackets, err := strconv.Atoi(cmdWords[2])
+				if err != nil {
+					continue
+				}
+				go higherlevel.IKEv1DoSSequential(npackets, cmdWords[3], cmdWords[4])
+			} else {
+				npackets, err := strconv.Atoi(cmdWords[2])
+				if err != nil {
+					continue
+				}
+				go higherlevel.IKEv1DoS(npackets, cmdWords[3], cmdWords[4])
+			}
+		case "ikev2dos":
+			if len(cmdWords) < 5 {
+				fmt.Println("To use ikev2dos provide the following instructions:")
+				fmt.Println("ikev2dos <flag> <number_of_packets> <destination_ip> <interface>")
+
+			} else if cmdWords[1] == "-s" {
+				npackets, err := strconv.Atoi(cmdWords[2])
+				if err != nil {
+					continue
+				}
+				go higherlevel.IKEv2DoSSequential(npackets, cmdWords[3], cmdWords[4])
+			} else if cmdWords[1] == "-c" {
+				npackets, err := strconv.Atoi(cmdWords[2])
+				if err != nil {
+					continue
+				}
+				go higherlevel.IKEv2DoS(npackets, cmdWords[3], cmdWords[4])
+			} else {
+				fmt.Println("Please use one of the available flags: -c concurrent | -b batch | -s sequential")
+				fmt.Println("")
 			}
 		}
 
