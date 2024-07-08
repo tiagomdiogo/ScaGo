@@ -28,6 +28,10 @@ type TLSAppData struct {
 	layer *protocols.TLSAppDataRecord
 }
 
+type TLSHeartbeat struct {
+	layer *protocols.TLSHeartbeatRecord
+}
+
 type TLSServerHelloDone struct {
 	layer *protocols.ServerHelloDone
 }
@@ -40,8 +44,8 @@ type TLSServerHello struct {
 	layer *protocols.ServerHello
 }
 
-type TLSServerKeyExchange struct {
-	layer *protocols.ServerKeyExchange
+type TLSCertificate struct {
+	layer *protocols.Certificate
 }
 type TLSClientKeyExchange struct {
 	layer *protocols.ClientKeyExchange
@@ -130,19 +134,42 @@ func TLSServerHelloDoneLayer() *TLSServerHelloDone {
 	}
 }
 
-func TLSServerKeyExchangeLayer() *TLSServerKeyExchange {
-	return &TLSServerKeyExchange{
-		layer: &protocols.ServerKeyExchange{},
+func TLSServerKeyExchangeLayer() *TLSCertificate {
+	return &TLSCertificate{
+		layer: &protocols.Certificate{},
 	}
 }
 func TLSClientKeyExchangeLayer() *TLSClientKeyExchange {
+	random := make([]byte, 46)
+	_, _ = rand.Read(random)
 	return &TLSClientKeyExchange{
-		layer: &protocols.ClientKeyExchange{},
+		layer: &protocols.ClientKeyExchange{
+			Header: protocols.Header{
+				ContentType: protocols.TLSClientKeyExchange,
+				Version:     0,
+				Length:      0,
+			},
+		},
 	}
 }
 func TLSFinishedLayer() *TLSFinished {
 	return &TLSFinished{
 		layer: &protocols.Finished{},
+	}
+}
+
+func TLSHeartbeatLayer() *TLSHeartbeat {
+	return &TLSHeartbeat{
+		layer: &protocols.TLSHeartbeatRecord{
+			TLSRecordHeader: protocols.TLSRecordHeader{
+				ContentType: protocols.TLSHearbeat,
+				Version:     0x0303,
+				Length:      3,
+			},
+			TLSHeartbeatType: 0,
+			Length:           0,
+			Data:             nil,
+		},
 	}
 }
 
@@ -183,10 +210,19 @@ func (t *TLS) AddRecords(records ...interface{}) {
 				ServerHello:       r.layer.ServerHello,
 				ServerHelloDone:   r.layer.ServerHelloDone,
 				ClientKeyExchange: r.layer.ClientKeyExchange,
-				ServerKeyExchange: r.layer.ServerKeyExchange,
+				Certificate:       r.layer.Certificate,
 				Finished:          r.layer.Finished,
 			}
 			t.layer.Handshake = append(t.layer.Handshake, handshake)
+		} else if r, err := record.(*TLSHeartbeat); err {
+			heartbeat := protocols.TLSHeartbeatRecord{
+				TLSRecordHeader:  r.layer.TLSRecordHeader,
+				TLSHeartbeatType: r.layer.TLSHeartbeatType,
+				Length:           r.layer.Length,
+				Data:             r.layer.Data,
+			}
+			t.layer.Heartbeat = append(t.layer.Heartbeat, heartbeat)
+
 		} else {
 			fmt.Errorf("Not Valid TLS Record Type")
 			break
@@ -281,9 +317,7 @@ func (t *TLSHandashake) SetPayload(payload interface{}) error {
 		}
 		t.layer.ServerHello = serverHello
 		return nil
-	} /*else if l, err := payload.(*TLSServerKeyExchange); err {
-		return nil
-	} */else if l, err := payload.(*TLSServerHelloDone); err {
+	} else if l, err := payload.(*TLSServerHelloDone); err {
 		serverHelloDone := protocols.ServerHelloDone{
 			Header: protocols.Header{
 				ContentType: l.layer.Header.ContentType,
@@ -292,11 +326,16 @@ func (t *TLSHandashake) SetPayload(payload interface{}) error {
 		}
 		t.layer.ServerHelloDone = serverHelloDone
 		return nil
-	} /*else if l, err := payload.(*TLSClientKeyExchange); err {
+	} else if l, err := payload.(*TLSClientKeyExchange); err {
+		clientkeyExchange := protocols.ClientKeyExchange{
+			Header: protocols.Header{
+				ContentType: l.layer.Header.ContentType,
+				Length:      l.layer.Header.Length,
+			},
+		}
+		t.layer.ClientKeyExchange = clientkeyExchange
 		return nil
-	} else if l, err := payload.(*TLSFinished); err {
-		return nil
-	} */else {
+	} else {
 		return fmt.Errorf("Payload type does not match the type determined by ContentType ")
 	}
 }
@@ -334,6 +373,25 @@ func (t *TLSServerHello) SetSessionID(id []byte) {
 	t.layer.SessionIDLength = byte(len(sessionId))
 }
 
+// CLIENT KEY EXCHANGE FUNCTIONS
+
 func (t *TLS) Layer() *protocols.TLS {
 	return t.layer
+}
+
+// HEARTBEAT FUNCTIONS
+
+func (t *TLSHeartbeat) SetType(re byte) error {
+	if r, err := protocols.TLSHeartbeatTypesMap[re]; err {
+		t.layer.TLSHeartbeatType = r
+		return nil
+	}
+	return fmt.Errorf("TLS Heartbeat Type is not valid.")
+}
+
+func (t *TLSHeartbeat) SetData(data string) {
+	dataBytes := []byte(data)
+	t.layer.Data = dataBytes
+	t.layer.Length += uint16(len(t.layer.Data))
+	t.layer.TLSRecordHeader.Length += t.layer.Length
 }

@@ -35,6 +35,7 @@ const (
 	TLSAlert              TLSType = 21
 	TLSHandshake          TLSType = 22
 	TLSApplicationData    TLSType = 23
+	TLSHearbeat           TLSType = 24
 	TLSUnknown            TLSType = 255
 )
 
@@ -51,6 +52,8 @@ func (tt TLSType) String() string {
 		return "Handshake"
 	case TLSApplicationData:
 		return "Application Data"
+	case TLSHearbeat:
+		return "Heartbeat"
 	}
 }
 
@@ -102,6 +105,7 @@ type TLS struct {
 	Handshake        []TLSHandshakeRecord
 	AppData          []TLSAppDataRecord
 	Alert            []TLSAlertRecord
+	Heartbeat        []TLSHeartbeatRecord
 }
 
 // TLSRecordHeader contains all the information that each TLS Record types should have
@@ -136,6 +140,7 @@ func (t *TLS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	t.Handshake = t.Handshake[:0]
 	t.AppData = t.AppData[:0]
 	t.Alert = t.Alert[:0]
+	t.Heartbeat = t.Heartbeat[:0]
 
 	return t.decodeTLSRecords(data, df)
 }
@@ -198,6 +203,13 @@ func (t *TLS) decodeTLSRecords(data []byte, df gopacket.DecodeFeedback) error {
 			return e
 		}
 		t.AppData = append(t.AppData, r)
+	case TLSHearbeat:
+		var r TLSHeartbeatRecord
+		e := r.decodeFromBytes(h, data[hl:tl], df)
+		if e != nil {
+			return e
+		}
+		t.Heartbeat = append(t.Heartbeat, r)
 	}
 
 	if len(data) == tl {
@@ -254,6 +266,9 @@ func (t *TLS) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOpt
 			totalLength += 5 + len(record.EncryptedMsg)
 		}
 	}
+	for _, record := range t.Heartbeat {
+		totalLength += 5 + int(record.TLSRecordHeader.Length)
+	}
 	data, err := b.PrependBytes(totalLength)
 	if err != nil {
 		return err
@@ -266,7 +281,7 @@ func (t *TLS) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOpt
 	}
 	for _, record := range t.Handshake {
 		off = encodeHeader(record.TLSRecordHeader, data, off)
-		// TODO
+		record.SerializeTo(b, opts, data, off)
 	}
 	for _, record := range t.AppData {
 		off = encodeHeader(record.TLSRecordHeader, data, off)
@@ -283,6 +298,11 @@ func (t *TLS) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOpt
 			copy(data[off:], record.EncryptedMsg)
 			off += len(record.EncryptedMsg)
 		}
+	}
+
+	for _, record := range t.Heartbeat {
+		off = encodeHeader(record.TLSRecordHeader, data, off)
+		record.SerializeTo(b, opts, data, off)
 	}
 	return nil
 }
