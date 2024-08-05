@@ -24,13 +24,10 @@ import (
 	"time"
 )
 
-type Session struct {
-	Client *TLSClient
-}
 type TLSClient struct {
 	conn              net.Conn
 	tlsLayer          *protocols.TLS
-	handshakeState    *HandshakeState
+	handshakeState    *TLSHandshakeState
 	peer              string
 	messageHistory    [][]byte
 	masterSecret      []byte
@@ -48,7 +45,7 @@ type TLSClient struct {
 	recvSeqNum        uint64
 }
 
-type HandshakeState struct {
+type TLSHandshakeState struct {
 	clientHelloSent           bool
 	serverHelloReceived       bool
 	certificateReceived       bool
@@ -62,16 +59,6 @@ type HandshakeState struct {
 	applicationDataSent       bool
 }
 
-func NewTLSSession(ip string) (*Session, error) {
-	sessionClient, err := NewTLSClientSession(ip)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating session:", err)
-	}
-	return &Session{
-		Client: sessionClient,
-	}, nil
-}
-
 func NewTLSClient(conn net.Conn, ip string, socket *supersocket.SuperSocket) *TLSClient {
 	tlsLayer := &protocols.TLS{
 		BaseLayer:        layers.BaseLayer{},
@@ -82,7 +69,7 @@ func NewTLSClient(conn net.Conn, ip string, socket *supersocket.SuperSocket) *TL
 		Heartbeat:        make([]protocols.TLSHeartbeatRecord, 0),
 	}
 
-	handshakeState := &HandshakeState{
+	handshakeState := &TLSHandshakeState{
 		clientHelloSent:           false,
 		serverHelloReceived:       false,
 		certificateReceived:       false,
@@ -157,7 +144,7 @@ func (c *TLSClient) SendClientHello() error {
 	return nil
 }
 
-func (c *TLSClient) WaitForHandshake() error {
+func (c *TLSClient) waitForHandshake() error {
 	if !c.handshakeState.clientHelloSent {
 		return fmt.Errorf("ClientHello not sent")
 	}
@@ -655,7 +642,7 @@ func (c *TLSClient) SendRcvAppData(data string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if len(tlsLayer.Heartbeat) > 0 {
+	if len(tlsLayer.AppData) > 0 {
 		decryptedData, _ := c.decryptData(tlsLayer.AppData[0].Payload)
 		return string(decryptedData), nil
 	} else if len(tlsLayer.Alert) > 0 {
@@ -687,7 +674,7 @@ func NewTLSClientSession(ip string) (*TLSClient, error) {
 	}
 
 	// Wait for the handshake to complete
-	err = tlsClient.WaitForHandshake()
+	err = tlsClient.waitForHandshake()
 	if err != nil {
 		return nil, fmt.Errorf("Error waiting for handshake: ", err)
 	}

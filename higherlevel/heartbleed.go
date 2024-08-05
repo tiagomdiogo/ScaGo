@@ -6,12 +6,12 @@ import (
 )
 
 func HeartBleed(ip string, length uint16, data string) {
-	s, err := session.NewTLSSession(ip)
+	s, err := session.NewTLSSessionClient(ip)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	heartBleedResponse, err := s.Client.SendRcvHeartBeat(length, data)
+	heartBleedResponse, err := s.TlsClient.SendRcvHeartBeat(length, data)
 	if err != nil {
 		fmt.Println(err)
 	}
