@@ -698,12 +698,13 @@ func (c *SSHClient) sendRcvOpenChannel() (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-
+	// Discard Global Request Packet
 	responsePacket, err := c.receiveAndDecryptPacket()
 	if err != nil {
 		return 0, err
 	}
 
+	responsePacket, _ = c.receiveAndDecryptPacket()
 	sshLayer := protocols.SSH{}
 	err = sshLayer.DecodeFromBytes(responsePacket, gopacket.NilDecodeFeedback)
 	if err != nil {
@@ -797,7 +798,8 @@ func NewSSHClientSession(ip, user, pass string) (*SSHClient, error) {
 	exec.Command("iptables", "-A", "OUTPUT", "-p", "icmp", "--icmp-type", "destination-unreachable", "-j", "DROP").Run()
 	conn, err := net.Dial("tcp", ip)
 	localAddr := conn.LocalAddr().(*net.TCPAddr)
-	socket, _ := supersocket.NewSuperSocket("eth0", "dst host "+utils.IPbyInt("eth0")+" and tcp port "+strconv.Itoa(localAddr.Port)+" and (((ip[2:2] - ((ip[0] & 0xf) << 2)) - ((tcp[12] & 0xf0) >> 4 << 2)) > 0)")
+	socket, _ := supersocket.NewSuperSocket("eth0", "dst host "+utils.IPbyInt("eth0")+" and tcp port "+
+		strconv.Itoa(localAddr.Port)+" and (((ip[2:2] - ((ip[0] & 0xf) << 2)) - ((tcp[12] & 0xf0) >> 4 << 2)) > 0)")
 
 	if err != nil {
 		return nil, fmt.Errorf("Error connecting to server: ", err)
